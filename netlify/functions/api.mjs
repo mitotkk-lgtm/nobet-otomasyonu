@@ -3,8 +3,45 @@ import { getStore } from "@netlify/blobs";
 
 const STORE_NAME = "pansiyon-nobet-cloud";
 const USERS_KEY = "users_v1";
-const DATA_KEY = "app_data_v1";
+const LEGACY_SHARED_DATA_KEY = "app_data_v1";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 gün
+
+function getUserDataKey(userId) {
+  return `user_data/${String(userId || "").replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+}
+
+function createEmptyUserData() {
+  const now = new Date();
+  const y = now.getFullYear();
+  return {
+    initializedEmpty: true,
+    currentYear: y,
+    currentMonth: now.getMonth(),
+    teachers: [],
+    scheduleDays: [],
+    dutyColumns: [
+      { id: "kiz1", title: "KIZ PANSİYONU", gender: "K" },
+      { id: "erkek1", title: "ERKEK PANSİYONU (1)", gender: "E" },
+      { id: "erkek2", title: "ERKEK PANSİYONU (2)", gender: "E" }
+    ],
+    monthlySchedules: {},
+    monthlyClosedDates: {},
+    monthlyDutyColumns: {},
+    settings: {
+      instTop: "T.C.",
+      instMid: "MİLLİ EĞİTİM BAKANLIĞI",
+      schoolName: "OKUL / KURUM ADI MÜDÜRLÜĞÜ",
+      approvalDate: `... / ... / ${y}\nUYGUNDUR`,
+      vicePrincipal: "Müdür Yardımcısı Adı Soyadı",
+      viceTitle: "Pansiyondan Sorumlu Müdür Yardımcısı",
+      principal: "Okul Müdürü Adı Soyadı",
+      principalTitle: "Okul Müdürü"
+    },
+    lastSaved: "",
+    savedBy: "",
+    lastSavedTimestamp: 0
+  };
+}
 
 const NO_CACHE_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
@@ -366,9 +403,25 @@ export default async (req) => {
       return jsonResponse({ ...res.payload, serverTime: new Date().toISOString() });
     }
 
-    // 6. Ortak Nöbet Verisini Yükle (Aktif tüm kullanıcılar görebilir; süresi dolmuşsa salt okunur)
+    // 6. Kullanıcıya Özel Nöbet Verisini Yükle (Her kullanıcının verisi tamamen ayrıdır)
     if (route === "data/load" && req.method === "GET") {
-      const saved = await store.get(DATA_KEY, { type: "json", consistency: "strong" });
+      const userDataKey = getUserDataKey(currentUser.id);
+      let saved = await store.get(userDataKey, { type: "json", consistency: "strong" });
+
+      // Ana yönetici nebi için eski ortak kayıttan tek seferlik taşıma
+      if (!saved && isAdmin) {
+        const legacyData = await store.get(LEGACY_SHARED_DATA_KEY, { type: "json", consistency: "strong" });
+        if (legacyData) {
+          saved = legacyData;
+          await store.setJSON(userDataKey, legacyData);
+        }
+      }
+
+      // Standart kullanıcı henüz veri kaydetmediyse boş nöbetçi listesi ve boş çizelge döner
+      if (!saved && !isAdmin) {
+        saved = createEmptyUserData();
+      }
+
       return jsonResponse({
         ok: true,
         data: saved || null,
@@ -376,7 +429,7 @@ export default async (req) => {
       });
     }
 
-    // 7. Ortak Nöbet Verisini Kaydet (Süresi dolmuş kullanıcı ASLA kaydedemez!)
+    // 7. Kullanıcıya Özel Nöbet Verisini Kaydet (Süresi dolmuş kullanıcı ASLA kaydedemez!)
     if (route === "data/save" && req.method === "POST") {
       if (!isAdmin && isUserExpired(currentUser)) {
         return jsonResponse({
@@ -394,12 +447,13 @@ export default async (req) => {
       const serverNow = new Date().toISOString();
       const enriched = {
         ...body.data,
+        ownerUserId: currentUser.id,
         savedBy: currentUser.username,
         savedByDisplayName: currentUser.displayName || currentUser.username,
         serverSavedAt: serverNow
       };
 
-      await store.setJSON(DATA_KEY, enriched);
+      await store.setJSON(getUserDataKey(currentUser.id), enriched);
       return jsonResponse({
         ok: true,
         savedBy: currentUser.username,
@@ -462,6 +516,12 @@ export default async (req) => {
       if (res.error) {
         return jsonResponse({ ok: false, error: res.error }, res.status || 400);
       }
+
+      // Yeni tanımlanan kullanıcı için tamamen boş ve izole veri kaydı oluştur (nöbetçi listesi boş)
+      if (res.user && res.user.id) {
+        await store.setJSON(getUserDataKey(res.user.id), createEmptyUserData());
+      }
+
       return jsonResponse({
         ok: true,
         user: res.user,
@@ -536,6 +596,7 @@ export default async (req) => {
       if (res.error) {
         return jsonResponse({ ok: false, error: res.error }, res.status || 400);
       }
+
       return jsonResponse({
         ok: true,
         user: res.user,
@@ -568,6 +629,7 @@ export default async (req) => {
       if (res.error) {
         return jsonResponse({ ok: false, error: res.error }, res.status || 400);
       }
+
       return jsonResponse({
         ok: true,
         user: res.user,
@@ -596,6 +658,14 @@ export default async (req) => {
       if (res.error) {
         return jsonResponse({ ok: false, error: res.error }, res.status || 400);
       }
+
+      // Silinen kullanıcıya ait izole veri kaydını da temizle
+      try {
+        await store.delete(getUserDataKey(userId));
+      } catch {
+        // ignore cleanup error
+      }
+
       return jsonResponse({
         ok: true,
         users: res.users.map(sanitizeUser),

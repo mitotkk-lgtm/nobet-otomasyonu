@@ -272,19 +272,62 @@
     return daysList.map(d => window.dutyScheduler.migrateDayObject(d, legacyCols));
   }
 
-  let settings = {
-    instTop: 'T.C.',
-    instMid: 'MİLLİ EĞİTİM BAKANLIĞI',
-    schoolName: 'ANADOLU LİSESİ MÜDÜRLÜĞÜ',
-    approvalDate: '... / ... / 2026\nUYGUNDUR',
-    vicePrincipal: 'Nebi DEMİR',
-    viceTitle: 'Pansiyondan Sorumlu Müdür Yardımcısı',
-    principal: 'Hayrullah YILDIRIM',
-    principalTitle: 'Okul Müdürü'
-  };
+  function getDefaultSettings(isAdminUser = false) {
+    const y = new Date().getFullYear();
+    if (isAdminUser) {
+      return {
+        instTop: 'T.C.',
+        instMid: 'MİLLİ EĞİTİM BAKANLIĞI',
+        schoolName: 'ANADOLU LİSESİ MÜDÜRLÜĞÜ',
+        approvalDate: '... / ... / 2026\nUYGUNDUR',
+        vicePrincipal: 'Nebi DEMİR',
+        viceTitle: 'Pansiyondan Sorumlu Müdür Yardımcısı',
+        principal: 'Hayrullah YILDIRIM',
+        principalTitle: 'Okul Müdürü'
+      };
+    }
+    return {
+      instTop: 'T.C.',
+      instMid: 'MİLLİ EĞİTİM BAKANLIĞI',
+      schoolName: 'OKUL / KURUM ADI MÜDÜRLÜĞÜ',
+      approvalDate: `... / ... / ${y}\nUYGUNDUR`,
+      vicePrincipal: 'Müdür Yardımcısı Adı Soyadı',
+      viceTitle: 'Pansiyondan Sorumlu Müdür Yardımcısı',
+      principal: 'Okul Müdürü Adı Soyadı',
+      principalTitle: 'Okul Müdürü'
+    };
+  }
 
-  // LOCAL STORAGE & VERİ TABANI İŞLEMLERİ
+  let settings = getDefaultSettings(false);
+
+  // KULLANICI BAZLI İZOLE LOCAL STORAGE & VERİ TABANI ANAHTARI
   const STORAGE_KEY = 'pansiyon_nobet_data_v1';
+
+  function getActiveStorageKey() {
+    const user = window.authManager ? window.authManager.getCurrentUser() : null;
+    if (!user) return null;
+    if (user.id === 'admin_nebi' || (user.username && user.username.toLowerCase() === 'nebi')) {
+      return STORAGE_KEY;
+    }
+    return `${STORAGE_KEY}_user_${user.id}`;
+  }
+
+  function resetInMemoryWorkspaceState(isAdminUser = false) {
+    const now = new Date();
+    currentYear = isAdminUser ? 2026 : now.getFullYear();
+    currentMonth = isAdminUser ? 10 : now.getMonth();
+    teachers = [];
+    closedDates = {};
+    scheduleDays = [];
+    dutyColumns = window.dutyScheduler.getDefaultDutyColumns();
+    monthlySchedules = {};
+    monthlyClosedDates = {};
+    monthlyDutyColumns = {};
+    settings = getDefaultSettings(isAdminUser);
+    hasUnsavedChanges = false;
+    const badge = document.getElementById('header-last-saved');
+    if (badge) badge.style.display = 'none';
+  }
 
   let toastContainer = null;
   function showToast(title, desc = '', type = 'success') {
@@ -382,7 +425,7 @@
   function applyParsedAppData(parsed) {
     if (!parsed || typeof parsed !== 'object') return false;
 
-    if (parsed.teachers && Array.isArray(parsed.teachers) && parsed.teachers.length > 0) {
+    if (Array.isArray(parsed.teachers)) {
       teachers = parsed.teachers;
     }
     if (parsed.settings) settings = { ...settings, ...parsed.settings };
@@ -396,13 +439,17 @@
         const legacyCols = rawMonthlyCols[k] || parsed.dutyColumns || null;
         monthlySchedules[k] = migrateScheduleDaysList(parsed.monthlySchedules[k], legacyCols);
       });
+    } else {
+      monthlySchedules = {};
     }
-    if (parsed.monthlyClosedDates) monthlyClosedDates = parsed.monthlyClosedDates;
+    monthlyClosedDates = parsed.monthlyClosedDates || {};
     if (parsed.monthlyDutyColumns) {
       monthlyDutyColumns = {};
       Object.keys(parsed.monthlyDutyColumns).forEach(k => {
         monthlyDutyColumns[k] = window.dutyScheduler.normalizeDutyColumns(parsed.monthlyDutyColumns[k]);
       });
+    } else {
+      monthlyDutyColumns = {};
     }
 
     const mKey = `${currentYear}_${currentMonth}`;
@@ -426,6 +473,9 @@
     if (parsed.lastSaved) {
       const bySuffix = parsed.savedBy ? ` — ${parsed.savedBy}` : '';
       updateLastSavedUI(`${parsed.lastSaved}${bySuffix}`);
+    } else {
+      const badge = document.getElementById('header-last-saved');
+      if (badge) badge.style.display = 'none';
     }
 
     hasUnsavedChanges = false;
@@ -436,10 +486,12 @@
     if (window.authManager && window.authManager.isLoggedIn() && window.authManager.isExpired()) {
       return false;
     }
+    const activeKey = getActiveStorageKey();
+    if (!activeKey) return false;
     try {
       const data = buildAppDataPayload();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      localStorage.setItem(STORAGE_KEY + '_backup', JSON.stringify(data));
+      localStorage.setItem(activeKey, JSON.stringify(data));
+      localStorage.setItem(activeKey + '_backup', JSON.stringify(data));
       hasUnsavedChanges = false;
       const bySuffix = data.savedBy ? ` — ${data.savedBy}` : '';
       updateLastSavedUI(`${data.lastSaved}${bySuffix}`);
@@ -460,10 +512,12 @@
   }
 
   function loadFromLocalStorage() {
+    const activeKey = getActiveStorageKey();
+    if (!activeKey) return false;
     try {
-      let raw = localStorage.getItem(STORAGE_KEY);
+      let raw = localStorage.getItem(activeKey);
       if (!raw) {
-        raw = localStorage.getItem(STORAGE_KEY + '_backup');
+        raw = localStorage.getItem(activeKey + '_backup');
       }
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -475,53 +529,91 @@
     return false;
   }
 
-  async function syncFromCloudAsync(silent = false) {
-    if (!window.authManager || !window.authManager.isCloudMode() || !window.authManager.isLoggedIn()) {
+  function renderFullWorkspaceUI() {
+    selectMonth.value = currentMonth;
+    selectYear.value = currentYear;
+    applySettingsToUI();
+    renderScheduleTable();
+    renderStatsTables();
+    renderTeachersList();
+    renderHolidaysCalendar();
+  }
+
+  async function loadActiveUserWorkspaceAsync(silent = true) {
+    const user = window.authManager ? window.authManager.getCurrentUser() : null;
+    if (!user) {
+      resetInMemoryWorkspaceState(false);
       return false;
     }
-    const res = await window.authManager.loadCloudDataAsync();
-    if (!res.ok) {
-      if (!silent) {
+
+    const isAdminUser = window.authManager.isAdmin(user);
+    resetInMemoryWorkspaceState(isAdminUser);
+
+    let loadedData = false;
+
+    if (window.authManager.isCloudMode()) {
+      const res = await window.authManager.loadCloudDataAsync();
+      if (res.ok && res.data) {
+        loadedData = applyParsedAppData(res.data);
+        const activeKey = getActiveStorageKey();
+        if (activeKey) {
+          try {
+            localStorage.setItem(activeKey, JSON.stringify(res.data));
+            localStorage.setItem(activeKey + '_backup', JSON.stringify(res.data));
+          } catch {
+            // ignore quota errors
+          }
+        }
+      } else if (!res.ok && !silent) {
         showToast('Bulut Senkronizasyon Hatası', res.error || 'Veriler sunucudan alınamadı.', 'error');
       }
-      return false;
+    } else {
+      loadedData = loadFromLocalStorage();
     }
 
-    if (res.data) {
-      applyParsedAppData(res.data);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(res.data));
-        localStorage.setItem(STORAGE_KEY + '_backup', JSON.stringify(res.data));
-      } catch {
-        // ignore local quota errors
+    // Aktif kullanıcı için başlangıç çizelgesi / kadro durumu:
+    // - Ana yönetici (nebi): ilk açılışta varsayılan kadro ve Kasım 2026 dağıtımı hazır gelir
+    // - Yeni tanımlanan standart kullanıcı: öğretmen kadrosu ve nöbet çizelgesi TAMAMEN BOŞ başlar!
+    if (isAdminUser) {
+      if (!loadedData && teachers.length === 0) {
+        teachers = window.dutyScheduler.getDefaultTeachers();
       }
-      selectMonth.value = currentMonth;
-      selectYear.value = currentYear;
-      applySettingsToUI();
-      renderScheduleTable();
-      renderStatsTables();
-      renderTeachersList();
-      renderHolidaysCalendar();
-      if (!silent) {
-        showToast('Buluttan Güncellendi ☁️', 'Tüm cihazlardaki en son nöbet ve kadro verileri yüklendi.', 'success');
+      if (!scheduleDays || scheduleDays.length === 0) {
+        closedDates = window.dutyScheduler.getDefaultClosedDates(currentYear, currentMonth);
+        runDistribution();
+        if (!loadedData) {
+          saveToLocalStorage();
+        }
       }
-      return true;
+    } else {
+      if (!scheduleDays || scheduleDays.length === 0) {
+        scheduleDays = window.dutyScheduler.generateMonthDays(currentYear, currentMonth, closedDates);
+      }
     }
 
-    if (!silent) {
-      showToast('Bulut Hazır ☁️', 'Henüz buluta kaydedilmiş bir çizelge yok. Kaydettiğinizde tüm cihazlarla paylaşılır.', 'info');
+    hasUnsavedChanges = false;
+    renderFullWorkspaceUI();
+
+    if (!silent && window.authManager.isCloudMode()) {
+      showToast('Verileriniz Güncellendi ☁️', `${user.displayName || user.username} hesabına ait en son kayıtlar yüklendi.`, 'success');
     }
-    return false;
+    return true;
+  }
+
+  async function syncFromCloudAsync(silent = false) {
+    return loadActiveUserWorkspaceAsync(silent);
   }
 
   async function handleManualSave() {
     if (!ensureNotExpiredOrAlert()) return;
+    const activeKey = getActiveStorageKey();
+    if (!activeKey) return;
     const isCloud = !!(window.authManager && window.authManager.isCloudMode() && window.authManager.isLoggedIn());
     const data = buildAppDataPayload();
 
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      localStorage.setItem(STORAGE_KEY + '_backup', JSON.stringify(data));
+      localStorage.setItem(activeKey, JSON.stringify(data));
+      localStorage.setItem(activeKey + '_backup', JSON.stringify(data));
     } catch (e) {
       console.warn('LocalStorage kayıt hatası:', e);
     }
@@ -543,7 +635,7 @@
         hasUnsavedChanges = false;
         const bySuffix = data.savedBy ? ` — ${data.savedBy}` : '';
         updateLastSavedUI(`${data.lastSaved}${bySuffix} (Bulut)`);
-        showToast('Bulut Veritabanına Kaydedildi! ☁️💾', 'Nöbet çizelgesi, öğretmen kadrosu ve ayarlar tüm cihazlarda ortak olarak güncellendi.', 'success');
+        showToast('Hesabınıza Kaydedildi! ☁️💾', 'Nöbet çizelgeniz, öğretmen listeniz ve ayarlarınız yalnızca sizin hesabınıza özel olarak buluta kaydedildi.', 'success');
       } finally {
         if (btnSaveSchedule) {
           btnSaveSchedule.disabled = false;
@@ -555,7 +647,7 @@
 
     hasUnsavedChanges = false;
     updateLastSavedUI(data.lastSaved);
-    showToast('Nöbetler Başarıyla Kaydedildi! 💾', 'Sayfayı kapatıp açtığınızda kaydettiğiniz en son çizelge otomatik olarak açılacaktır.', 'success');
+    showToast('Nöbetler Başarıyla Kaydedildi! 💾', 'Hesabınıza ait son nöbet çizelgesi güvenle kaydedildi.', 'success');
   }
 
   function revertToLastSaved() {
@@ -683,55 +775,26 @@
       renderScheduleTable();
       renderStatsTables();
       renderHolidaysCalendar();
-    } else if (expiredReadOnly) {
-      // Süresi dolmuş kullanıcı yeni ay dağıtamaz -> boş salt okunur görünüm göster
-      closedDates = monthlyClosedDates[newKey] || window.dutyScheduler.getDefaultClosedDates(currentYear, currentMonth);
+    } else if (expiredReadOnly || teachers.length === 0) {
+      // Süresi dolmuş kullanıcı veya henüz öğretmeni olmayan yeni kullanıcı -> boş çizelge göster
+      closedDates = monthlyClosedDates[newKey] || {};
       scheduleDays = window.dutyScheduler.generateMonthDays(currentYear, currentMonth, closedDates);
       renderScheduleTable();
       renderStatsTables();
       renderHolidaysCalendar();
     } else {
       // YENİ AY -> İlk kez açılıyorsa varsayılan kapalı günleri yükle ve oluştur
-      closedDates = monthlyClosedDates[newKey] || window.dutyScheduler.getDefaultClosedDates(currentYear, currentMonth);
+      closedDates = monthlyClosedDates[newKey] || {};
       monthlyClosedDates[newKey] = closedDates;
       runDistribution();
       renderHolidaysCalendar();
     }
   }
 
-  // UYGULAMA İLK BAŞLATMA
+  // UYGULAMA İLK BAŞLATMA (Kullanıcı verisi giriş doğrulandıktan sonra izole olarak yüklenir)
   function initApp() {
-    const hasLoaded = loadFromLocalStorage();
-
-    if (!hasLoaded || teachers.length === 0) {
-      teachers = window.dutyScheduler.getDefaultTeachers();
-    }
-
-    selectMonth.value = currentMonth;
-    selectYear.value = currentYear;
-
+    resetInMemoryWorkspaceState(false);
     applySettingsToUI();
-
-    const mKey = `${currentYear}_${currentMonth}`;
-    // Eğer veritabanında bu ay için çizelge varsa, kesinlikle yeniden dağıtma, var olanı getir!
-    if (scheduleDays && scheduleDays.length > 0) {
-      renderScheduleTable();
-      renderStatsTables();
-    } else if (monthlySchedules[mKey] && monthlySchedules[mKey].length > 0) {
-      scheduleDays = monthlySchedules[mKey];
-      closedDates = monthlyClosedDates[mKey] || {};
-      renderScheduleTable();
-      renderStatsTables();
-    } else {
-      closedDates = window.dutyScheduler.getDefaultClosedDates(currentYear, currentMonth);
-      runDistribution();
-      if (!hasLoaded) {
-        saveToLocalStorage();
-      }
-    }
-
-    renderTeachersList();
-    renderHolidaysCalendar();
     setupEventHandlers();
   }
 
@@ -1648,8 +1711,17 @@
     femaleCountEl.textContent = female.length;
     maleCountEl.textContent = male.length;
 
-    female.forEach(t => femaleTeachersListEl.appendChild(createTeacherCard(t)));
-    male.forEach(t => maleTeachersListEl.appendChild(createTeacherCard(t)));
+    if (female.length === 0) {
+      femaleTeachersListEl.innerHTML = '<div style="padding:18px; text-align:center; color:#64748b; font-size:0.84rem; font-style:italic;">Henüz Kız Pansiyonu öğretmeni eklenmedi. Yukarıdaki <strong>➕ Yeni Öğretmen Ekle</strong> veya <strong>📥 Excel\'den Kadro Yükle</strong> butonunu kullanabilirsiniz.</div>';
+    } else {
+      female.forEach(t => femaleTeachersListEl.appendChild(createTeacherCard(t)));
+    }
+
+    if (male.length === 0) {
+      maleTeachersListEl.innerHTML = '<div style="padding:18px; text-align:center; color:#64748b; font-size:0.84rem; font-style:italic;">Henüz Erkek Pansiyonu öğretmeni eklenmedi. Yukarıdaki <strong>➕ Yeni Öğretmen Ekle</strong> veya <strong>📥 Excel\'den Kadro Yükle</strong> butonunu kullanabilirsiniz.</div>';
+    } else {
+      male.forEach(t => maleTeachersListEl.appendChild(createTeacherCard(t)));
+    }
   }
 
   function createTeacherCard(t) {
@@ -1902,11 +1974,26 @@
     alert('Kurum ve imza ayarları başarıyla kaydedildi!');
   });
 
-  btnResetDefaults.addEventListener('click', () => {
+  btnResetDefaults.addEventListener('click', async () => {
     if (!ensureNotExpiredOrAlert()) return;
-    if (confirm('Tüm ayarları ve öğretmen listesini orijinal haline sıfırlamak istediğinize emin misiniz?')) {
-      localStorage.removeItem(STORAGE_KEY);
-      location.reload();
+    if (confirm('Sadece kendi hesabınıza ait ayarları, öğretmen listesini ve çizelgeleri sıfırlamak istediğinize emin misiniz?')) {
+      const activeKey = getActiveStorageKey();
+      if (activeKey) {
+        localStorage.removeItem(activeKey);
+        localStorage.removeItem(activeKey + '_backup');
+      }
+      const isAdminUser = !!(window.authManager && window.authManager.isAdmin());
+      resetInMemoryWorkspaceState(isAdminUser);
+      if (isAdminUser) {
+        teachers = window.dutyScheduler.getDefaultTeachers();
+        closedDates = window.dutyScheduler.getDefaultClosedDates(currentYear, currentMonth);
+        runDistribution();
+      } else {
+        scheduleDays = window.dutyScheduler.generateMonthDays(currentYear, currentMonth, {});
+      }
+      renderFullWorkspaceUI();
+      saveToLocalStorage();
+      showToast('Hesap Verileri Sıfırlandı', 'Yalnızca aktif hesabınızın verileri sıfırlandı.', 'info');
     }
   });
 
@@ -2574,12 +2661,12 @@
     if (loginCloudStatusEl) {
       loginCloudStatusEl.className = `cloud-status-pill ${isCloud ? 'cloud-online' : 'cloud-local'}`;
       loginCloudStatusEl.textContent = isCloud
-        ? '☁️ Merkezi Bulut Veritabanı Aktif (Tüm Cihazlar Ortak)'
-        : '💻 Yerel Mod (Çevrimdışı / Tek Cihaz)';
+        ? '☁️ Merkezi Bulut Veritabanı Aktif (Kullanıcı Bazlı Ayrı Veri)'
+        : '💻 Yerel Mod (Çevrimdışı / Kullanıcı Bazlı Ayrı Veri)';
     }
     if (cloudModeBadge) {
       cloudModeBadge.className = `cloud-mode-badge ${isCloud ? 'cloud-online' : 'cloud-local'}`;
-      cloudModeBadge.textContent = isCloud ? '☁️ Bulut Ortak DB' : '💻 Yerel Mod';
+      cloudModeBadge.textContent = isCloud ? '☁️ Kişisel Bulut DB' : '💻 Yerel Mod';
     }
     if (btnSyncCloud) {
       btnSyncCloud.style.display = isCloud ? 'inline-flex' : 'none';
@@ -3086,10 +3173,7 @@
           updateCloudStatusBadges();
           syncAuthUI();
           switchTab('tab-schedule');
-
-          if (window.authManager.isCloudMode()) {
-            await syncFromCloudAsync(true);
-          }
+          await loadActiveUserWorkspaceAsync(true);
 
           if (res.expiryStatus && res.expiryStatus.expired) {
             showToast('Yetki Süreniz Dolmuş ⛔', `Giriş yapıldı ancak yetki süreniz (${res.expiryStatus.formattedDate}) dolduğu için salt okunur moddasınız.`, 'error');
@@ -3134,6 +3218,8 @@
           }
         }
         await window.authManager.logoutAsync();
+        resetInMemoryWorkspaceState(false);
+        renderFullWorkspaceUI();
         document.querySelectorAll('.modal-backdrop.active').forEach(m => m.classList.remove('active'));
         syncAuthUI();
       });
@@ -3247,8 +3333,8 @@
     await window.authManager.init();
     updateCloudStatusBadges();
     syncAuthUI();
-    if (window.authManager.isCloudMode() && window.authManager.isLoggedIn()) {
-      await syncFromCloudAsync(true);
+    if (window.authManager.isLoggedIn()) {
+      await loadActiveUserWorkspaceAsync(true);
     }
 
     // Canlı süre ve bulut yetki takip zamanlayıcısı (her 20 saniyede bir sunucu/süre durumunu günceller)

@@ -710,6 +710,12 @@
         return { ok: false, error: 'Ana yönetici (nebi) hesabı silinemez.' };
       }
       this.saveUsersLocal(users.filter(u => u.id !== userId));
+      try {
+        localStorage.removeItem(`pansiyon_nobet_data_v1_user_${userId}`);
+        localStorage.removeItem(`pansiyon_nobet_data_v1_user_${userId}_backup`);
+      } catch {
+        // ignore
+      }
       return { ok: true };
     }
 
