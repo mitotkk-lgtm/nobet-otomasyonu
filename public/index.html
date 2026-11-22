@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nöbet Otomasyonu | Pansiyon Belletmen Nöbet Dağıtım Sistemi</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231e40af'/%3E%3Cstop offset='1' stop-color='%230284c7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='13' fill='url(%23g)'/%3E%3Crect x='13' y='15' width='38' height='35' rx='5' fill='%23fff'/%3E%3Crect x='13' y='15' width='38' height='9' rx='3' fill='%23f59e0b'/%3E%3Crect x='18' y='29' width='8' height='3.5' rx='1.5' fill='%23be185d'/%3E%3Crect x='29' y='29' width='17' height='3.5' rx='1.5' fill='%2394a3b8'/%3E%3Crect x='18' y='36' width='8' height='3.5' rx='1.5' fill='%230369a1'/%3E%3Crect x='29' y='36' width='17' height='3.5' rx='1.5' fill='%2394a3b8'/%3E%3Crect x='18' y='43' width='8' height='3.5' rx='1.5' fill='%231e40af'/%3E%3Crect x='29' y='43' width='17' height='3.5' rx='1.5' fill='%2394a3b8'/%3E%3C/svg%3E">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="app.css">
+  
+  <!-- Local Vendor Libraries for 100% Offline Support -->
+  <script src="libs/xlsx.full.min.js"></script>
+  <script src="libs/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <!-- ================= KULLANICI GİRİŞ PANELİ (LOGIN SCREEN) ================= -->
+  <div id="login-overlay" class="login-overlay no-print">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">🏛️</div>
+        <h2 class="login-title">Pansiyon Belletmen Nöbet Sistemi</h2>
+        <p class="login-subtitle">Devam etmek için kullanıcı adınız ve şifrenizle giriş yapın</p>
+        <div id="login-cloud-status" class="cloud-status-pill cloud-checking">⏳ Sunucu kontrol ediliyor...</div>
+      </div>
+
+      <form id="login-form" class="login-form" autocomplete="off">
+        <div class="form-group">
+          <label for="login-username" class="form-label">Kullanıcı Adı:</label>
+          <input type="text" id="login-username" class="form-control form-control-lg" placeholder="Kullanıcı adınızı girin" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password" class="form-label">Şifre:</label>
+          <div class="password-input-wrap">
+            <input type="password" id="login-password" class="form-control form-control-lg" placeholder="Şifrenizi girin" required>
+            <button type="button" id="btn-toggle-login-pass" class="btn-toggle-pass" title="Şifreyi Göster/Gizle">👁️</button>
+          </div>
+        </div>
+
+        <div id="login-error-box" class="login-error-box" style="display: none;"></div>
+
+        <button type="submit" id="btn-login-submit" class="btn btn-primary login-submit-btn">
+          🔐 Giriş Yap
+        </button>
+      </form>
+
+      <div class="login-footer-note">
+        Yetki ve yeni kullanıcı talepleri için ana yönetici (<strong>nebi</strong>) ile iletişime geçiniz.
+      </div>
+    </div>
+  </div>
+
+  <div id="app" class="app-wrapper app-locked">
+    <!-- Üst Başlık & Menü Çubuğu -->
+    <header class="app-header no-print">
+      <div class="header-brand">
+        <div class="brand-icon">🏛️</div>
+        <div>
+          <h1 class="brand-title">Pansiyon Belletmen Nöbet Otomasyonu</h1>
+          <p class="brand-subtitle">Kız & Erkek Pansiyonu Adil Nöbet Dağıtım ve Yönetim Sistemi</p>
+        </div>
+      </div>
+
+      <div class="header-right-stack">
+        <div class="user-session-bar" id="user-session-bar">
+          <div class="session-user-info">
+            <span class="cloud-mode-badge" id="cloud-mode-badge">💻 Yerel Mod</span>
+            <span class="session-role-badge" id="session-role-badge">👑 Ana Yönetici</span>
+            <strong class="session-user-name" id="session-user-name">nebi</strong>
+          </div>
+          <div class="session-rights-badges" id="session-rights-badges">
+            <!-- Dinamik hak rozetleri -->
+          </div>
+          <button id="btn-sync-cloud" class="btn btn-secondary btn-sm" style="display: none;" title="Diğer cihazlardan kaydedilen en güncel nöbet ve kullanıcı verilerini buluttan çek">
+            ☁️ Yenile
+          </button>
+          <button id="btn-logout" class="btn btn-outline-danger btn-sm" title="Oturumu kapat ve kullanıcı giriş ekranına dön">
+            🚪 Çıkış Yap
+          </button>
+        </div>
+
+        <div class="header-actions">
+          <button id="btn-save-schedule" class="btn btn-success pulse-save-btn" title="Nöbet çizelgesini kaydet (Kapatıp açtığınızda son hal yüklenir)">
+            <span>💾</span> Nöbetleri Kaydet
+          </button>
+          <button id="btn-revert-schedule" class="btn btn-secondary" title="Kaydedilmemiş değişiklikleri iptal et ve en son kaydettiğiniz nöbet çizelgesine dön">
+            <span>↩️</span> Son Kayda Dön
+          </button>
+          <button id="btn-open-wizard" class="btn btn-primary">
+            <span>✨</span> Yeni Ay Dağıtım Sihirbazı
+          </button>
+          <button id="btn-export-pdf" class="btn btn-danger">
+            <span>📄</span> PDF Olarak Kaydet
+          </button>
+          <button id="btn-export-excel" class="btn btn-success">
+            <span>📊</span> Excel İndir
+          </button>
+          <button id="btn-print" class="btn btn-secondary">
+            <span>🖨️</span> Yazdır
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Ana Navigasyon Sekmeleri -->
+    <nav class="nav-tabs no-print">
+      <button class="nav-tab active" data-tab="tab-schedule">
+        📅 Nöbet Çizelgesi & İstatistikler
+      </button>
+      <button class="nav-tab" data-tab="tab-teachers">
+        👥 Öğretmen Kadrosu & Mazeretler
+      </button>
+      <button class="nav-tab" data-tab="tab-holidays">
+        🏖️ Tatil & Yurt Kapalı Günleri
+      </button>
+      <button class="nav-tab" data-tab="tab-settings">
+        ⚙️ Kurum & İmza Ayarları
+      </button>
+      <button class="nav-tab nav-tab-admin" id="nav-tab-users" data-tab="tab-users" style="display: none;">
+        🔐 Kullanıcı &amp; Yetki Yönetimi
+      </button>
+    </nav>
+
+    <!-- Süresi Dolmuş Kullanıcı İçin Salt Okunur Uyarı Bandı -->
+    <div id="expired-lock-banner" class="expired-lock-banner no-print" style="display: none;">
+      <span class="expired-lock-icon">⛔</span>
+      <span id="expired-lock-text">Yetki süreniz dolmuştur. Hiçbir değişiklik yapamazsınız (salt okunur mod). Süre uzatmak için ana yönetici (nebi) ile iletişime geçiniz.</span>
+    </div>
+
+    <!-- İçerik Alanı -->
+    <main class="main-content">
+      
+      <!-- ================= 1. TAB: NÖBET ÇİZELGESİ ================= -->
+      <section id="tab-schedule" class="tab-pane active">
+        <!-- Kontrol Çubuğu (Ay Seçimi, Filtreler, Manuel İşlemler) -->
+        <div class="toolbar-card no-print">
+          <div class="toolbar-left">
+            <div class="month-selector">
+              <label for="select-month" class="form-label">Planlanan Ay:</label>
+              <select id="select-month" class="form-select">
+                <option value="0">Ocak</option>
+                <option value="1">Şubat</option>
+                <option value="2">Mart</option>
+                <option value="3">Nisan</option>
+                <option value="4">Mayıs</option>
+                <option value="5">Haziran</option>
+                <option value="6">Temmuz</option>
+                <option value="7">Ağustos</option>
+                <option value="8">Eylül</option>
+                <option value="9">Ekim</option>
+                <option value="10" selected>Kasım</option>
+                <option value="11">Aralık</option>
+              </select>
+              <select id="select-year" class="form-select" style="width: 100px;">
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+              </select>
+              <button id="btn-quick-distribute" class="btn btn-accent btn-sm" title="Mevcut ayarlarla hızlıca yeniden dağıt">
+                🔄 Yeniden Dağıt
+              </button>
+              <button id="btn-config-columns" class="btn btn-secondary btn-sm" title="Kız (en fazla 3) ve Erkek (en fazla 3) nöbetçi belletici sütunlarını ayarla (Toplam en fazla 6 sütun)">
+                🧩 Sütunlar (<span id="active-columns-count">3</span>/6)
+              </button>
+            </div>
+            
+            <div class="stat-badge">
+              <span class="badge-label">Açık Gün:</span>
+              <span id="active-days-count" class="badge-val">22 Gün</span>
+            </div>
+            <div class="stat-badge warning">
+              <span class="badge-label">Kapalı / Tatil:</span>
+              <span id="closed-days-count" class="badge-val">8 Gün</span>
+            </div>
+
+            <div class="lock-tools">
+              <button id="btn-lock-all" class="btn btn-secondary btn-sm" title="Mevcut yerleştirilmiş tüm nöbetçileri kilitler (otomatik dağıtımda yerleri değişmez)">
+                🔒 Doluları Kilitle
+              </button>
+              <button id="btn-unlock-all" class="btn btn-secondary btn-sm" title="Tüm kilitleri kaldırır">
+                🔓 Kilitleri Aç
+              </button>
+            </div>
+
+            <div class="schedule-color-legend">
+              <span class="legend-badge legend-red" title="Aynı satırda birden fazla nöbete yazılan öğretmenlerin yazısı kırmızı görünür">
+                <span class="legend-dot red"></span> Aynı Satırda Çift Nöbet (Yazı Kırmızı)
+              </span>
+              <span class="legend-badge legend-yellow" title="Arka arkaya / üst üste günlerde nöbete yazılan öğretmenler sarı görünür">
+                <span class="legend-dot yellow"></span> Arka Arkaya Gün (Sarı Renk)
+              </span>
+            </div>
+
+            <span id="header-last-saved" class="last-saved-badge" style="display: none;">
+              💾 <span id="last-saved-text">Son Kayıt: Yok</span>
+            </span>
+          </div>
+
+          <div class="toolbar-right">
+            <div class="view-toggles" style="display: flex; gap: 12px; align-items: center; font-size: 0.85rem; font-weight: 600;">
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <input type="checkbox" id="chk-view-etut" checked> Etüt Sütununu Göster
+              </label>
+              <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <input type="checkbox" id="chk-view-stats" checked> Özet Tabloyu Göster
+              </label>
+            </div>
+            <button id="btn-clear-schedule" class="btn btn-outline-danger btn-sm" title="Kilitli olmayan nöbetleri temizler (Kilitli 🔒 nöbetçiler korunur)">
+              Çizelgeyi Temizle
+            </button>
+          </div>
+        </div>
+
+        <!-- Yazdırılabilir / PDF Alanı (Print Container) -->
+        <div id="printable-roster" class="roster-paper">
+          <!-- Resmi MEB Başlığı -->
+          <div class="official-header">
+            <div class="header-line-1" id="disp-inst-top">T.C.</div>
+            <div class="header-line-2" id="disp-inst-mid">MİLLİ EĞİTİM BAKANLIĞI</div>
+            <div class="header-line-3" id="disp-school-name">ANADOLU LİSESİ MÜDÜRLÜĞÜ</div>
+            <div class="header-line-4" id="disp-roster-title">2026 YILI KASIM AYI BELLETMEN ÖĞRETMEN NÖBET ÇİZELGESİ</div>
+          </div>
+
+          <!-- Ana Nöbet Tablosu -->
+          <div class="table-responsive">
+            <table class="roster-table" id="roster-table">
+              <thead id="roster-thead">
+                <tr>
+                  <th style="width: 90px;">TARİH</th>
+                  <th style="width: 110px;">GÜN</th>
+                  <th style="width: 220px;" class="col-female">KIZ PANSİYONU</th>
+                  <th style="width: 220px;" class="col-male">ERKEK PANSİYONU (1)</th>
+                  <th style="width: 220px;" class="col-male">ERKEK PANSİYONU (2)</th>
+                  <th style="width: 220px;" class="col-etut">ETÜT NÖBETİ</th>
+                  <th style="width: 100px;" class="col-signature">İMZA</th>
+                </tr>
+              </thead>
+              <tbody id="roster-tbody">
+                <!-- Javascript ile dinamik doldurulacak -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Öğretmen Nöbet Dağılım Özeti (İstatistik Tablosu) -->
+          <div class="stats-section">
+            <h3 class="section-title">📊 NÖBET DAĞILIM VE PUAN ÖZET TABLOSU</h3>
+            <div class="stats-tables-grid">
+              <!-- Kız Pansiyonu Öğretmenleri -->
+              <div class="stats-card">
+                <div class="stats-card-title female-border">KIZ PANSİYONU ÖĞRETMENLERİ</div>
+                <table class="stats-table" id="female-stats-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>ÖĞRETMEN ADI SOYADI</th>
+                      <th>HAFTA İÇİ</th>
+                      <th>HAFTA SONU</th>
+                      <th>TOPLAM</th>
+                    </tr>
+                  </thead>
+                  <tbody id="female-stats-tbody">
+                    <!-- Dinamik -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Erkek Pansiyonu Öğretmenleri -->
+              <div class="stats-card">
+                <div class="stats-card-title male-border">ERKEK PANSİYONU ÖĞRETMENLERİ</div>
+                <table class="stats-table" id="male-stats-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>ÖĞRETMEN ADI SOYADI</th>
+                      <th>HAFTA İÇİ</th>
+                      <th>HAFTA SONU</th>
+                      <th>ETÜT</th>
+                      <th>TOPLAM</th>
+                      <th title="Nöbet + Etüt/2">PUAN</th>
+                    </tr>
+                  </thead>
+                  <tbody id="male-stats-tbody">
+                    <!-- Dinamik -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resmi Onay & İmza Alanı -->
+          <div class="official-footer">
+            <div class="signature-date" id="disp-approval-date">
+              ... / ... / 2026<br>UYGUNDUR
+            </div>
+            <div class="signatures-wrapper">
+              <div class="sig-box">
+                <div class="sig-name" id="disp-vice-principal">Nebi DEMİR</div>
+                <div class="sig-title" id="disp-vice-title">Pansiyondan Sorumlu Müdür Yardımcısı</div>
+              </div>
+              <div class="sig-box">
+                <div class="sig-name" id="disp-principal">Hayrullah YILDIRIM</div>
+                <div class="sig-title" id="disp-principal-title">Okul Müdürü</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. TAB: ÖĞRETMENLER & MAZERETLER ================= -->
+      <section id="tab-teachers" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">👥 Öğretmen Kadrosu ve Mazeret / İzin Yönetimi</h2>
+              <p class="card-desc">Öğretmenlerin pansiyon türünü, izinli olduğu günleri veya haftanın tutamayacağı günlerini buradan yönetebilirsiniz.</p>
+            </div>
+            <div class="header-actions">
+              <button id="btn-add-teacher" class="btn btn-primary btn-sm">
+                <span>➕</span> Yeni Öğretmen Ekle
+              </button>
+              <label class="btn btn-outline-success btn-sm file-upload-label">
+                <span>📥</span> Excel'den Kadro Yükle
+                <input type="file" id="file-excel-upload" accept=".xlsx, .xls" style="display: none;">
+              </label>
+            </div>
+          </div>
+
+          <div class="teacher-management-grid">
+            <!-- Kız Pansiyonu Öğretmen Listesi -->
+            <div class="panel-box">
+              <div class="panel-header female-bg">
+                <span class="panel-title">👩 Kız Pansiyonu Öğretmenleri (<span id="female-count">0</span>)</span>
+              </div>
+              <div class="teacher-list" id="female-teachers-list">
+                <!-- Dinamik Kartlar -->
+              </div>
+            </div>
+
+            <!-- Erkek Pansiyonu Öğretmen Listesi -->
+            <div class="panel-box">
+              <div class="panel-header male-bg">
+                <span class="panel-title">👨 Erkek Pansiyonu Öğretmenleri (<span id="male-count">0</span>)</span>
+              </div>
+              <div class="teacher-list" id="male-teachers-list">
+                <!-- Dinamik Kartlar -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 3. TAB: TATİL VE YURT KAPALI GÜNLERİ ================= -->
+      <section id="tab-holidays" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">🏖️ Yurt Kapalı Günleri ve Tatil Takvimi</h2>
+              <p class="card-desc">Yurdun kapalı olduğu hafta ve günlerde nöbetçi öğretmen atanmaz. Takvimden günlere tıklayarak açıp kapatabilirsiniz.</p>
+            </div>
+            <div class="header-actions">
+              <button id="btn-preset-aratatil" class="btn btn-warning btn-sm">
+                📅 Kasım Ara Tatilini Kapat (14-22 Kasım)
+              </button>
+              <button id="btn-preset-all-open" class="btn btn-secondary btn-sm">
+                Tüm Günleri Aç
+              </button>
+            </div>
+          </div>
+
+          <div class="calendar-manager">
+            <div class="calendar-legend">
+              <span class="legend-item"><span class="legend-dot open"></span> Yurt Açık (Nöbet Var)</span>
+              <span class="legend-item"><span class="legend-dot closed"></span> Yurt Kapalı / Tatil (Nöbet Yok)</span>
+              <span class="legend-item"><span class="legend-dot weekend"></span> Hafta Sonu</span>
+            </div>
+            
+            <div class="calendar-grid" id="calendar-grid">
+              <!-- Dinamik Ay Takvimi -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. TAB: AYARLAR & İMZA ================= -->
+      <section id="tab-settings" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">⚙️ Kurum, Başlık ve İmza Ayarları</h2>
+            <p class="card-desc">PDF çıktısında ve nöbet çizelgesinde görünecek resmi başlık ve imza yetkililerini düzenleyin.</p>
+          </div>
+
+          <form id="settings-form" class="settings-form">
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label class="form-label">Üst Başlık (Satır 1):</label>
+                <input type="text" id="setting-inst-top" class="form-control" value="T.C.">
+              </div>
+              <div class="form-group col-6">
+                <label class="form-label">Bakanlık / İlçe (Satır 2):</label>
+                <input type="text" id="setting-inst-mid" class="form-control" value="MİLLİ EĞİTİM BAKANLIĞI">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label class="form-label">Okul / Kurum Adı:</label>
+                <input type="text" id="setting-school-name" class="form-control" value="ANADOLU LİSESİ MÜDÜRLÜĞÜ">
+              </div>
+              <div class="form-group col-6">
+                <label class="form-label">Onay Tarihi Metni:</label>
+                <input type="text" id="setting-approval-date" class="form-control" value="... / ... / 2026 - UYGUNDUR">
+              </div>
+            </div>
+
+            <hr class="form-divider">
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label class="form-label">Pansiyondan Sorumlu Md. Yrd. Adı Soyadı:</label>
+                <input type="text" id="setting-vice-principal" class="form-control" value="Nebi DEMİR">
+              </div>
+              <div class="form-group col-6">
+                <label class="form-label">Müdür Yardımcısı Unvanı:</label>
+                <input type="text" id="setting-vice-title" class="form-control" value="Pansiyondan Sorumlu Müdür Yardımcısı">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label class="form-label">Okul Müdürü Adı Soyadı:</label>
+                <input type="text" id="setting-principal" class="form-control" value="Hayrullah YILDIRIM">
+              </div>
+              <div class="form-group col-6">
+                <label class="form-label">Okul Müdürü Unvanı:</label>
+                <input type="text" id="setting-principal-title" class="form-control" value="Okul Müdürü">
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Ayarları Kaydet</button>
+              <button type="button" id="btn-reset-defaults" class="btn btn-outline-danger">Fabrika Ayarlarına Dön</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ================= 5. TAB: KULLANICI & YETKİ YÖNETİMİ (SADECE ANA YÖNETİCİ: nebi) ================= -->
+      <section id="tab-users" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">🔐 Kullanıcı ve Yetki Yönetimi</h2>
+              <p class="card-desc">Yeni kullanıcılar tanımlayın, her kullanıcı için <strong>Yeni Nöbet Hazırlama</strong> ve <strong>Çıktı Alma (PDF / Excel / Yazdır)</strong> haklarını belirleyin. Ana yönetici (<strong>nebi</strong>) sınırsız yetkiye sahiptir.</p>
+            </div>
+            <div class="header-actions">
+              <button id="btn-add-user" class="btn btn-primary btn-sm">
+                <span>➕</span> Yeni Kullanıcı Tanımla
+              </button>
+            </div>
+          </div>
+
+          <div class="users-summary-bar" id="users-summary-bar">
+            <!-- Dinamik kullanıcı özet kartları -->
+          </div>
+
+          <div class="table-responsive" style="padding: 0 20px 20px 20px;">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Kullanıcı</th>
+                  <th>Rol / Durum</th>
+                  <th>Yeni Nöbet Hazırlama Hakkı</th>
+                  <th>Çıktı Alma Hakkı (PDF / Excel / Yazdır)</th>
+                  <th>Yetki Süresi</th>
+                  <th style="width: 240px;">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-tbody">
+                <!-- Dinamik kullanıcı satırları -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= DAĞITIM SİHİRBAZI MODAL (WIZARD) ================= -->
+  <div id="modal-wizard" class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <!-- Wizard Header -->
+        <div class="modal-header">
+          <div class="wizard-steps-indicator">
+            <div class="step-bubble active" data-step="1">1. Ay &amp; Sütunlar</div>
+            <div class="step-line"></div>
+            <div class="step-bubble" data-step="2">2. Kapalı Günler</div>
+            <div class="step-line"></div>
+            <div class="step-bubble" data-step="3">3. Mazeretler</div>
+            <div class="step-line"></div>
+            <div class="step-bubble" data-step="4">4. Dağıtım Kuralları</div>
+          </div>
+          <button class="modal-close" id="btn-wizard-close">&times;</button>
+        </div>
+
+        <!-- Wizard Body -->
+        <div class="modal-body">
+          <!-- ADIM 1: AY, YIL VE NÖBETÇİ BELLETİCİ SÜTUN TERCİHİ -->
+          <div class="wizard-step active" id="w-step-1">
+            <h3 class="step-title">🗓️ Adım 1: Ay Seçimi ve Nöbetçi Belletici Sütunları</h3>
+            <p class="step-desc">Planlanacak ayı ve yeni nöbet çizelgesinde yer alacak Kız Pansiyonu (en fazla 3) ve Erkek Pansiyonu (en fazla 3) sütun sayılarını belirleyin (Toplam en fazla 6 sütun).</p>
+            
+            <div class="wizard-form-box">
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label class="form-label">Ay:</label>
+                  <select id="w-select-month" class="form-select form-select-lg">
+                    <option value="0">Ocak</option>
+                    <option value="1">Şubat</option>
+                    <option value="2">Mart</option>
+                    <option value="3">Nisan</option>
+                    <option value="4">Mayıs</option>
+                    <option value="5">Haziran</option>
+                    <option value="6">Temmuz</option>
+                    <option value="7">Ağustos</option>
+                    <option value="8">Eylül</option>
+                    <option value="9">Ekim</option>
+                    <option value="10" selected>Kasım</option>
+                    <option value="11">Aralık</option>
+                  </select>
+                </div>
+                <div class="form-group col-6">
+                  <label class="form-label">Yıl:</label>
+                  <input type="number" id="w-input-year" class="form-control form-control-lg" value="2026" min="2024" max="2035">
+                </div>
+              </div>
+
+              <!-- Nöbetçi Belletici Sütun Tercihi (Kız maks. 3 + Erkek maks. 3 = Toplam maks. 6 Sütun) -->
+              <div class="columns-pref-panel">
+                <div class="columns-pref-header">
+                  <div>
+                    <div class="columns-pref-title">🧩 Nöbetçi Belletici Sütun Tercihi (Kız: 0-3, Erkek: 0-3)</div>
+                    <div class="columns-pref-sub">Kız pansiyonu için en fazla 3, Erkek pansiyonu için en fazla 3 olmak üzere toplam en fazla 6 sütun seçebilirsiniz.</div>
+                  </div>
+                  <span class="columns-total-badge" id="w-columns-total-badge">Toplam: 3 / 6 Sütun</span>
+                </div>
+
+                <div class="gender-count-grid">
+                  <div class="gender-picker-box female-picker-box">
+                    <span class="gender-picker-label">👩 Kız Pansiyonu (Maks. 3)</span>
+                    <div class="column-count-picker" id="w-female-count-picker">
+                      <button type="button" class="col-count-btn" data-count="0">0</button>
+                      <button type="button" class="col-count-btn active" data-count="1">1</button>
+                      <button type="button" class="col-count-btn" data-count="2">2</button>
+                      <button type="button" class="col-count-btn" data-count="3">3</button>
+                    </div>
+                  </div>
+                  <div class="gender-picker-box male-picker-box">
+                    <span class="gender-picker-label">👨 Erkek Pansiyonu (Maks. 3)</span>
+                    <div class="column-count-picker" id="w-male-count-picker">
+                      <button type="button" class="col-count-btn" data-count="0">0</button>
+                      <button type="button" class="col-count-btn" data-count="1">1</button>
+                      <button type="button" class="col-count-btn active" data-count="2">2</button>
+                      <button type="button" class="col-count-btn" data-count="3">3</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="columns-config-list" id="w-columns-config-list">
+                  <!-- Dinamik sütun başlık satırları (1..6) -->
+                </div>
+              </div>
+
+              <div class="wizard-info-alert">
+                ℹ️ Seçilen ay <strong><span id="w-disp-month-days">30</span> gün</strong> sürmektedir. Seçtiğiniz nöbetçi belletici sütunları çizelge, PDF ve Excel çıktılarında otomatik olarak uygulanır.
+              </div>
+
+              <div class="wizard-step-action-bar">
+                <span></span>
+                <button type="button" class="btn btn-primary" id="w-step1-next-inline">
+                  İleri: Kapalı Günleri Belirle (Adım 2) ➔
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADIM 2: YURT KAPALI GÜNLERİ (TATİLLER) -->
+          <div class="wizard-step" id="w-step-2">
+            <h3 class="step-title">🏖️ Adım 2: Yurdun Kapalı Olduğu Günler & Tatil Haftaları</h3>
+            <p class="step-desc">Bu ay içinde yurdun kapalı olduğu günler veya ara tatil haftası var mı? Kapalı günlerde nöbet yazılmaz.</p>
+
+            <div class="quick-preset-bar">
+              <button type="button" id="w-btn-aratatil" class="btn btn-sm btn-warning">
+                📌 Ara Tatil Haftasını Kapat (14-22 Kasım)
+              </button>
+              <button type="button" id="w-btn-weekends-close" class="btn btn-sm btn-secondary">
+                Hafta Sonlarını Kapat
+              </button>
+              <button type="button" id="w-btn-month-close" class="btn btn-sm btn-outline-danger">
+                Tüm Ayı Kapalı Yap
+              </button>
+              <button type="button" id="w-btn-open-all" class="btn btn-sm btn-secondary">
+                Tümünü Aç
+              </button>
+            </div>
+
+            <div class="wizard-calendar-box" id="w-calendar-container">
+              <!-- Wizard Mini Takvimi -->
+            </div>
+
+            <div class="wizard-step-action-bar">
+              <span class="help-text">💡 Kapatmak veya açmak istediğiniz günlerin üzerine tıklayın (Kırmızı = Kapalı, Beyaz = Açık).</span>
+              <button type="button" class="btn btn-primary" id="w-step2-next-inline">
+                Seçimi Onayla & İlerle (Mazeretler) ➔
+              </button>
+            </div>
+          </div>
+
+          <!-- ADIM 3: ÖĞRETMEN MAZERETLERİ VE KISITLAMALARI -->
+          <div class="wizard-step" id="w-step-3">
+            <h3 class="step-title">📋 Adım 3: Öğretmen Mazeretleri ve Kapalı Günler</h3>
+            <p class="step-desc">Hangi öğretmenin nöbet tutamayacağı belirli günler veya mazereti var mı? Buradan işaretleyin.</p>
+
+            <div class="constraints-manager-layout">
+              <div class="constraint-left">
+                <label class="form-label">Öğretmen Seçin:</label>
+                <select id="w-select-teacher" class="form-select">
+                  <!-- Dinamik öğretmenler -->
+                </select>
+
+                <div class="constraint-options-box">
+                  <label class="form-check-label">
+                    <input type="checkbox" id="w-teacher-exempt"> Bu ay nöbetten tamamen muaf (0 nöbet)
+                  </label>
+
+                  <div id="w-teacher-restrictions">
+                    <label class="form-label" style="margin-top: 10px;">Haftanın Nöbet Tutamayacağı Günleri:</label>
+                    <div class="days-checkboxes">
+                      <label><input type="checkbox" value="1" class="w-day-block"> Pzt</label>
+                      <label><input type="checkbox" value="2" class="w-day-block"> Sal</label>
+                      <label><input type="checkbox" value="3" class="w-day-block"> Çar</label>
+                      <label><input type="checkbox" value="4" class="w-day-block"> Per</label>
+                      <label><input type="checkbox" value="5" class="w-day-block"> Cum</label>
+                      <label><input type="checkbox" value="6" class="w-day-block"> Cmt</label>
+                      <label><input type="checkbox" value="0" class="w-day-block"> Paz</label>
+                    </div>
+
+                    <label class="form-label" style="margin-top: 10px;">Nöbet Tutamayacağı Belirli Tarihler:</label>
+                    <div class="dates-selector-grid" id="w-teacher-dates-grid">
+                      <!-- Gün butonları -->
+                    </div>
+                  </div>
+
+                  <button type="button" id="w-btn-save-teacher-constraint" class="btn btn-accent btn-sm" style="margin-top: 12px; width: 100%;">
+                    Kısıtlamayı Kaydet
+                  </button>
+                </div>
+              </div>
+
+              <div class="constraint-right">
+                <div class="constraint-list-title">Mazeretli / Kısıtlamalı Öğretmenler:</div>
+                <div class="constraint-list" id="w-active-constraints-list">
+                  <!-- Kayıtlı kısıtlamalar -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ADIM 4: DAĞITIM KURALLARI -->
+          <div class="wizard-step" id="w-step-4">
+            <h3 class="step-title">⚖️ Adım 4: Adil Dağıtım Kuralları & Tercihler</h3>
+            <p class="step-desc">Sistem dağıtımı yaparken bu adalet ve yerleşim kurallarını uygular.</p>
+
+            <div class="rules-box">
+              <div class="rule-item">
+                <div class="rule-icon">⚖️</div>
+                <div class="rule-content">
+                  <div class="rule-title">Eşit Toplam Nöbet Dağıtımı</div>
+                  <div class="rule-desc">Tüm öğretmenlerin toplam nöbet sayısı birbirine eşit veya en fazla 1 nöbet farkla paylaştırılır.</div>
+                </div>
+                <div class="rule-check">
+                  <input type="checkbox" checked disabled>
+                </div>
+              </div>
+
+              <div class="rule-item">
+                <div class="rule-icon">🏖️</div>
+                <div class="rule-content">
+                  <div class="rule-title">Hafta Sonu Nöbetlerini Adil Paylaştır (Cumartesi, Pazar)</div>
+                  <div class="rule-desc">Hafta sonu nöbetleri dengeli dağıtılır; bir öğretmene aşırı hafta sonu yükü binmez.</div>
+                </div>
+                <div class="rule-check">
+                  <input type="checkbox" id="w-rule-weekend" checked>
+                </div>
+              </div>
+
+              <div class="rule-item">
+                <div class="rule-icon">🚫</div>
+                <div class="rule-content">
+                  <div class="rule-title">Ardışık Günlerde Nöbet Engeli</div>
+                  <div class="rule-desc">Bir öğretmene üst üste 2 gün (ardışık) nöbet verilmez.</div>
+                </div>
+                <div class="rule-check">
+                  <input type="checkbox" id="w-rule-consecutive" checked>
+                </div>
+              </div>
+
+              <div class="rule-item">
+                <div class="rule-icon">📚</div>
+                <div class="rule-content">
+                  <div class="rule-title">Etüt Nöbeti Otomatik Dağıtımı</div>
+                  <div class="rule-desc">İşaretlenirse etüt nöbetleri de otomatik paylaştırılır (İşaretsiz = Etüt nöbeti otomatik dağıtılmaz, boş bırakılır veya manuel atanır).</div>
+                </div>
+                <div class="rule-check">
+                  <input type="checkbox" id="w-rule-etut">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wizard Footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="w-btn-prev" disabled>Geri</button>
+          <button type="button" class="btn btn-primary" id="w-btn-next">İleri ➔</button>
+          <button type="button" class="btn btn-accent pulse-btn" id="w-btn-finish" style="display: none;">
+            🚀 Otomatik Dağıtımı Başlat
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MANUEL ÖĞRETMEN DEĞİŞTİRME / SEÇİM MODAL ================= -->
+  <div id="modal-slot-edit" class="modal-backdrop">
+    <div class="modal-dialog modal-md">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="slot-modal-title">Nöbetçi Öğretmen Değiştir</h3>
+          <button class="modal-close" id="btn-slot-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="slot-edit-info">
+            <div class="slot-info-badge" id="slot-info-date">Tarih: 01.11.2026 Pazar</div>
+            <div class="slot-info-badge" id="slot-info-role">Görev: Kız Pansiyonu</div>
+          </div>
+
+          <div class="current-assignee-box">
+            <span>Şu Anki Nöbetçi:</span>
+            <strong id="slot-current-teacher">FADİME NUR GÜÇLÜ</strong>
+          </div>
+
+          <div style="margin-top: 12px; padding: 10px 14px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px;">
+            <label class="form-check-label" style="font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="slot-edit-lock" style="width: 18px; height: 18px;">
+              <span>🔒 Bu nöbeti kilitle (Otomatik yeniden dağıtımda yerinde sabit kalsın)</span>
+            </label>
+          </div>
+
+          <label class="form-label" style="margin-top: 14px;">Yeni Nöbetçi Öğretmen Seçin:</label>
+          <input type="text" id="slot-candidate-search" class="form-control" placeholder="🔍 Öğretmen ara..." style="margin-bottom: 8px; font-size: 0.85rem; padding: 6px 10px;">
+          <div class="candidate-teachers-list" id="candidate-teachers-list">
+            <!-- Öğretmen Seçenekleri -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-danger" id="btn-slot-clear">Bu Nöbeti Boşalt (Sil)</button>
+          <button type="button" class="btn btn-secondary" id="btn-slot-cancel">İptal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PDF VE ÇIKTI SEÇENEKLERİ MODAL ================= -->
+  <div id="modal-pdf-export" class="modal-backdrop">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">📄 PDF Çıktı Seçenekleri</h3>
+          <button class="modal-close" id="btn-pdf-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 14px;">
+            PDF belgesinde yer almasını istediğiniz alanları seçin:
+          </p>
+
+          <div class="pdf-options-list">
+            <label class="pdf-option-item">
+              <input type="checkbox" id="pdf-opt-etut" checked>
+              <div>
+                <strong>Etüt Nöbeti Sütununu Ekle</strong>
+                <p style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                  İşaretsiz bırakılırsa Etüt sütunu PDF tablosunda yer almaz, diğer sütunlar genişler.
+                </p>
+              </div>
+            </label>
+
+            <label class="pdf-option-item">
+              <input type="checkbox" id="pdf-opt-stats" checked>
+              <div>
+                <strong>Alt Nöbet Özet Tablosunu Ekle</strong>
+                <p style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                  Sayfa altındaki öğretmen nöbet sayıları ve puan tablosunu PDF'e dahil eder.
+                </p>
+              </div>
+            </label>
+
+            <label class="pdf-option-item">
+              <input type="checkbox" id="pdf-opt-signatures" checked>
+              <div>
+                <strong>Onay ve İmza Bölümünü Ekle</strong>
+                <p style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                  Müdür ve Müdür Yardımcısı imza alanlarını ekler.
+                </p>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-pdf-modal-cancel">Vazgeç</button>
+          <button type="button" class="btn btn-danger" id="btn-pdf-modal-confirm">
+            <span>📄</span> PDF İndir
+          </button>
+          <button type="button" class="btn btn-primary" id="btn-pdf-modal-print">
+            <span>🖨️</span> Yazdır
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ÖĞRETMEN EKLEME / DÜZENLEME MODAL ================= -->
+  <div id="modal-teacher-edit" class="modal-backdrop">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="teacher-modal-title">Yeni Öğretmen Ekle</h3>
+          <button class="modal-close" id="btn-teacher-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="teacher-form">
+            <div class="form-group">
+              <label class="form-label">Adı Soyadı:</label>
+              <input type="text" id="teacher-input-name" class="form-control" placeholder="Örn: AHMET YILMAZ" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cinsiyet / Pansiyon Türü:</label>
+              <select id="teacher-input-gender" class="form-select">
+                <option value="K">Kadın (Kız Pansiyonu)</option>
+                <option value="E">Erkek (Erkek Pansiyonu)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-check-label">
+                <input type="checkbox" id="teacher-input-etut"> Etüt Nöbeti Tutabilir
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="form-check-label">
+                <input type="checkbox" id="teacher-input-active" checked> Aktif (Nöbet listesinde yer alır)
+              </label>
+            </div>
+            <div class="modal-footer" style="padding: 12px 0 0 0;">
+              <button type="submit" class="btn btn-primary" style="width: 100%;">Kaydet</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SÜTUN YAPILANDIRMA MODAL (KIZ 0-3 + ERKEK 0-3 = TOPLAM 6 SÜTUN) ================= -->
+  <div id="modal-columns-config" class="modal-backdrop">
+    <div class="modal-dialog modal-md">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">🧩 Nöbetçi Belletici Sütun Tercihleri</h3>
+          <button class="modal-close" id="btn-columns-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 14px;">
+            Kız Pansiyonu için <strong>en fazla 3</strong>, Erkek Pansiyonu için <strong>en fazla 3</strong> olmak üzere toplam <strong>en fazla 6</strong> nöbetçi belletici sütunu belirleyebilirsiniz.
+          </p>
+
+          <div class="columns-pref-panel" style="margin-top: 0;">
+            <div class="columns-pref-header">
+              <div class="columns-pref-title">Pansiyon Bazlı Sütun Sayısı</div>
+              <span class="columns-total-badge" id="m-columns-total-badge">Toplam: 3 / 6 Sütun</span>
+            </div>
+
+            <div class="gender-count-grid">
+              <div class="gender-picker-box female-picker-box">
+                <span class="gender-picker-label">👩 Kız Pansiyonu (0-3)</span>
+                <div class="column-count-picker" id="m-female-count-picker">
+                  <button type="button" class="col-count-btn" data-count="0">0</button>
+                  <button type="button" class="col-count-btn active" data-count="1">1</button>
+                  <button type="button" class="col-count-btn" data-count="2">2</button>
+                  <button type="button" class="col-count-btn" data-count="3">3</button>
+                </div>
+              </div>
+              <div class="gender-picker-box male-picker-box">
+                <span class="gender-picker-label">👨 Erkek Pansiyonu (0-3)</span>
+                <div class="column-count-picker" id="m-male-count-picker">
+                  <button type="button" class="col-count-btn" data-count="0">0</button>
+                  <button type="button" class="col-count-btn" data-count="1">1</button>
+                  <button type="button" class="col-count-btn active" data-count="2">2</button>
+                  <button type="button" class="col-count-btn" data-count="3">3</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="columns-config-list" id="m-columns-config-list">
+              <!-- Dinamik sütun başlık satırları -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-columns-modal-cancel">Vazgeç</button>
+          <button type="button" class="btn btn-primary" id="btn-columns-modal-apply">Sütunları Uygula</button>
+          <button type="button" class="btn btn-accent" id="btn-columns-modal-apply-redistribute">🔄 Uygula ve Yeniden Dağıt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= KULLANICI EKLEME / DÜZENLEME MODAL ================= -->
+  <div id="modal-user-edit" class="modal-backdrop">
+    <div class="modal-dialog modal-md">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="user-modal-title">➕ Yeni Kullanıcı Tanımla</h3>
+          <button class="modal-close" id="btn-user-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="user-edit-form" autocomplete="off">
+            <input type="hidden" id="user-input-id">
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label class="form-label">Kullanıcı Adı:</label>
+                <input type="text" id="user-input-username" class="form-control" placeholder="Örn: ahmet" required>
+              </div>
+              <div class="form-group col-6">
+                <label class="form-label">Adı Soyadı / Görünen Ad:</label>
+                <input type="text" id="user-input-displayname" class="form-control" placeholder="Örn: Ahmet Yılmaz">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" id="user-password-label">Şifre:</label>
+              <div class="password-input-wrap">
+                <input type="password" id="user-input-password" class="form-control" placeholder="En az 3 karakter">
+                <button type="button" id="btn-toggle-user-pass" class="btn-toggle-pass" title="Şifreyi Göster/Gizle">👁️</button>
+              </div>
+              <small id="user-password-hint" style="color: #64748b; font-size: 0.75rem; display: none;">Mevcut şifreyi korumak için boş bırakabilirsiniz.</small>
+            </div>
+
+            <div id="user-rights-editor-box" class="user-rights-editor-box">
+              <div class="user-right-group">
+                <label class="form-label">✨ Yeni Nöbet Hazırlama Hakkı:</label>
+                <div class="user-right-controls">
+                  <select id="user-schedule-mode" class="form-select">
+                    <option value="none">🚫 Kapalı (Yetki Yok)</option>
+                    <option value="limited" selected>🔢 Sınırlı Hak (Adet Belirle)</option>
+                    <option value="unlimited">♾️ Sınırsız</option>
+                  </select>
+                  <div class="user-limit-wrap" id="user-schedule-limit-wrap">
+                    <input type="number" id="user-schedule-limit" class="form-control" value="5" min="1" max="999">
+                    <span>Hak</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="user-right-group">
+                <label class="form-label">📄 Çıktı Alma Hakkı (PDF / Excel / Yazdır):</label>
+                <div class="user-right-controls">
+                  <select id="user-export-mode" class="form-select">
+                    <option value="none">🚫 Kapalı (Yetki Yok)</option>
+                    <option value="limited" selected>🔢 Sınırlı Hak (Adet Belirle)</option>
+                    <option value="unlimited">♾️ Sınırsız</option>
+                  </select>
+                  <div class="user-limit-wrap" id="user-export-limit-wrap">
+                    <input type="number" id="user-export-limit" class="form-control" value="5" min="1" max="999">
+                    <span>Hak</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="user-right-group">
+                <label class="form-label">⏳ Yetki Süresi (Süresi Dolunca Hiçbir Değişiklik Yapamaz):</label>
+                <div class="user-right-controls">
+                  <select id="user-expiry-mode" class="form-select">
+                    <option value="unlimited" selected>♾️ Süresiz</option>
+                    <option value="duration">⏱️ Süre Belirle (Şu Andan İtibaren)</option>
+                    <option value="until_date">📅 Bitiş Tarih &amp; Saati Seç</option>
+                  </select>
+                </div>
+
+                <div id="user-expiry-duration-wrap" class="user-expiry-subrow" style="display: none;">
+                  <input type="number" id="user-expiry-amount" class="form-control" value="7" min="1" max="3650" style="width: 90px; text-align: center; font-weight: 700;">
+                  <select id="user-expiry-unit" class="form-select" style="flex: 1;">
+                    <option value="minutes">Dakika</option>
+                    <option value="hours">Saat</option>
+                    <option value="days" selected>Gün</option>
+                  </select>
+                </div>
+
+                <div id="user-expiry-date-wrap" class="user-expiry-subrow" style="display: none;">
+                  <input type="datetime-local" id="user-expiry-datetime" class="form-control" style="width: 100%;">
+                </div>
+
+                <div id="user-expiry-current-info" class="user-expiry-info-note" style="display: none;"></div>
+              </div>
+
+              <div class="form-group" style="margin-top: 10px; margin-bottom: 0;">
+                <label class="form-check-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                  <input type="checkbox" id="user-input-active" checked style="width: 16px; height: 16px;">
+                  <span>Hesap Aktif (Giriş yapabilir)</span>
+                </label>
+              </div>
+            </div>
+
+            <div id="user-admin-unlimited-note" class="wizard-info-alert" style="display: none; margin-top: 12px;">
+              👑 <strong>nebi</strong> ana yönetici hesabıdır ve her zaman <strong>sınırsız yetkiye</strong> sahiptir.
+            </div>
+
+            <div id="user-form-error" class="login-error-box" style="display: none; margin-top: 10px;"></div>
+
+            <div class="modal-footer" style="padding: 14px 0 0 0; margin-top: 12px;">
+              <button type="button" class="btn btn-secondary" id="btn-user-modal-cancel">Vazgeç</button>
+              <button type="submit" class="btn btn-primary">💾 Kullanıcıyı Kaydet</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS Dosyaları -->
+  <script src="scheduler.js"></script>
+  <script src="auth.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
