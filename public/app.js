@@ -50,6 +50,7 @@
   const btnSaveSchedule = document.getElementById('btn-save-schedule');
   const btnExportPdf = document.getElementById('btn-export-pdf');
   const btnExportExcel = document.getElementById('btn-export-excel');
+  const btnExportEokul = document.getElementById('btn-export-eokul');
   const btnPrint = document.getElementById('btn-print');
 
   // Sihirbaz (Wizard) DOM
@@ -2252,11 +2253,137 @@
     });
   }
 
+  /**
+   * Yazdırılabilir bir HTML alanını (Nöbet Çizelgesi veya Puantaj)
+   * taşma, kesilme veya 2. sayfaya sarkma olmadan KESİN OLARAK TEK A4 SAYFASINA sığdırır.
+   */
+  async function exportElementToSinglePagePdf(element, opts) {
+    const orientation = opts && opts.orientation === 'landscape' ? 'landscape' : 'portrait';
+    const filename = (opts && opts.filename) || 'belge.pdf';
+    const marginMm = typeof (opts && opts.marginMm) === 'number' ? opts.marginMm : 4;
+    const minCssWidth = (opts && opts.targetCssWidth) || (orientation === 'landscape' ? 1120 : 794);
+    const scale = (opts && opts.scale) || 2;
+
+    // Yeni uygulanan PDF stillerinin yerleşmesi için 2 kare bekle
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    // Elemanın taşmasız doğal genişliğini ve yüksekliğini ölç
+    const contentW = Math.ceil(Math.max(element.scrollWidth || 0, element.offsetWidth || 0, minCssWidth));
+    const contentH = Math.ceil(Math.max(element.scrollHeight || 0, element.offsetHeight || 0, 100));
+
+    // Tüm içeriği kırpmadan ve sayfa bölme boşluğu eklemeden yüksek çözünürlüklü canvas'a yakala
+    const captureOpt = {
+      margin: [0, 0, 0, 0],
+      image: { type: 'jpeg', quality: 0.98 },
+      enableLinks: false,
+      pagebreak: { mode: [] },
+      html2canvas: {
+        scale: scale,
+        useCORS: true,
+        letterRendering: true,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: Math.max(document.documentElement.clientWidth || 0, contentW + 80),
+        windowHeight: Math.max(document.documentElement.clientHeight || 0, contentH + 200),
+        onclone: (clonedDoc) => {
+          const ov = clonedDoc.querySelector('.html2pdf__overlay');
+          if (ov) {
+            ov.style.overflow = 'visible';
+            ov.style.bottom = 'auto';
+            ov.style.height = 'auto';
+            ov.style.width = Math.max(contentW + 80, clonedDoc.documentElement.clientWidth || 0) + 'px';
+          }
+          const ct = clonedDoc.querySelector('.html2pdf__container');
+          if (ct) {
+            ct.style.overflow = 'visible';
+            ct.style.height = 'auto';
+            ct.style.width = contentW + 'px';
+          }
+        }
+      },
+      jsPDF: {
+        unit: 'px',
+        format: [contentW, contentW],
+        orientation: 'portrait'
+      }
+    };
+
+    const srcCanvas = await html2pdf().set(captureOpt).from(element).toCanvas().get('canvas');
+    if (!srcCanvas || !srcCanvas.width || !srcCanvas.height) {
+      throw new Error('PDF görüntüsü oluşturulamadı.');
+    }
+
+    // Hedef A4 kullanılabilir alan en-boy oranına (innerRatio) göre tek sayfa tuvali oluştur
+    const pageW = orientation === 'landscape' ? 297 : 210;
+    const pageH = orientation === 'landscape' ? 210 : 297;
+    const innerW = pageW - marginMm * 2;
+    const innerH = pageH - marginMm * 2;
+    const innerRatio = innerH / innerW;
+    const safeRatio = innerRatio * 0.9975;
+
+    const srcW = srcCanvas.width;
+    const srcH = srcCanvas.height;
+    const maxSinglePageH = Math.floor(srcW * safeRatio) - 6;
+
+    let pageCanvas = srcCanvas;
+    if (srcH > maxSinglePageH) {
+      // İçerik 1 A4 sayfasından uzunsa: oranı bozmadan yüksekliğe tam sığdır ve yatayda ortala
+      const MAX_DIM = 11500;
+      let targetH = srcH;
+      let targetW = Math.ceil((srcH + 8) / safeRatio);
+      let drawW = srcW;
+      let drawH = srcH;
+
+      if (targetW > MAX_DIM || targetH > MAX_DIM) {
+        const down = Math.min(MAX_DIM / targetW, MAX_DIM / targetH);
+        targetW = Math.max(1, Math.floor(targetW * down));
+        targetH = Math.max(1, Math.floor(targetH * down));
+        drawW = Math.max(1, Math.floor(srcW * down));
+        drawH = Math.max(1, Math.floor(srcH * down));
+      }
+
+      const fitted = document.createElement('canvas');
+      fitted.width = targetW;
+      fitted.height = targetH;
+      const ctx = fitted.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, targetW, targetH);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      const offsetX = Math.max(0, Math.floor((targetW - drawW) / 2));
+      ctx.drawImage(srcCanvas, 0, 0, srcW, srcH, offsetX, 0, drawW, drawH);
+      pageCanvas = fitted;
+    }
+
+    const saveOpt = {
+      margin: [marginMm, marginMm, marginMm, marginMm],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      enableLinks: false,
+      jsPDF: { unit: 'mm', format: 'a4', orientation: orientation }
+    };
+
+    const pdf = await html2pdf().set(saveOpt).from(pageCanvas, 'canvas').toPdf().get('pdf');
+    while (pdf.internal && typeof pdf.internal.getNumberOfPages === 'function' && pdf.internal.getNumberOfPages() > 1) {
+      pdf.deletePage(pdf.internal.getNumberOfPages());
+    }
+    pdf.save(filename);
+  }
+
   function generatePdfWithOptions(opts) {
     const printableRoster = document.getElementById('printable-roster');
-    
+
+    const fRows = femaleStatsTbody ? femaleStatsTbody.querySelectorAll('tr').length : 0;
+    const mRows = maleStatsTbody ? maleStatsTbody.querySelectorAll('tr').length : 0;
+    const maxStatsRows = opts.includeStats ? Math.max(fRows, mRows) : 0;
+    const useSpacious = !opts.includeStats;
+    const useCompact = opts.includeStats && maxStatsRows > 22;
+
     // Geçici tek sayfa ve görünüm sınıflarını uygula
     printableRoster.classList.add('pdf-single-page');
+    printableRoster.classList.toggle('pdf-spacious', useSpacious);
+    printableRoster.classList.toggle('pdf-compact', useCompact);
     printableRoster.classList.toggle('hide-etut-col', !opts.includeEtut);
     printableRoster.classList.toggle('hide-stats-section', !opts.includeStats);
     printableRoster.classList.toggle('hide-signatures', !opts.includeSignatures);
@@ -2269,26 +2396,24 @@
     const mName = window.dutyScheduler.monthNames[currentMonth];
     const filename = `${currentYear}_${mName}_Pansiyon_Nobet_Cizelgesi.pdf`;
 
-    const opt = {
-      margin: [3, 3, 3, 3],
-      filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
     btnExportPdf.disabled = true;
     btnExportPdf.textContent = '⏳ PDF Oluşturuluyor...';
 
     const cleanup = () => {
       btnExportPdf.disabled = false;
       btnExportPdf.innerHTML = '<span>📄</span> PDF Olarak Kaydet';
-      printableRoster.classList.remove('pdf-single-page');
+      printableRoster.classList.remove('pdf-single-page', 'pdf-spacious', 'pdf-compact', 'hide-signatures');
       lockEls.forEach(el => el.style.removeProperty('display'));
       syncViewToggles();
     };
 
-    html2pdf().set(opt).from(printableRoster).save().then(() => {
+    exportElementToSinglePagePdf(printableRoster, {
+      filename: filename,
+      orientation: 'portrait',
+      marginMm: 4,
+      targetCssWidth: 794,
+      scale: 2
+    }).then(() => {
       cleanup();
     }).catch(err => {
       console.error(err);
@@ -2309,9 +2434,98 @@
 
     window.print();
     setTimeout(() => {
+      printableRoster.classList.remove('hide-signatures');
       lockEls.forEach(el => el.style.removeProperty('display'));
       syncViewToggles();
     }, 1000);
+  }
+
+  // e-Okul / e-Pansiyon Tarayıcı Eklentisi İçin Aktarım Dosyası (.json) İndir
+  if (btnExportEokul) {
+    btnExportEokul.addEventListener('click', async () => {
+      const rightRes = await consumeExportRightOrAlert();
+      if (!rightRes) return;
+
+      try {
+        const activeCols = window.dutyScheduler.normalizeDutyColumns(dutyColumns);
+        const includeEtutDefault = !(chkViewEtut && !chkViewEtut.checked);
+        const columnsMeta = activeCols.map((col, idx) => ({
+          key: col.id,
+          title: col.title,
+          gender: col.gender,
+          type: 'duty',
+          defaultEokulSlot: idx + 1,
+          defaultNobetciBelletici: true
+        }));
+        columnsMeta.push({
+          key: 'etut',
+          title: 'ETÜT NÖBETİ',
+          gender: 'M',
+          type: 'etut',
+          defaultEokulSlot: includeEtutDefault ? (activeCols.length + 1) : 0,
+          defaultNobetciBelletici: false
+        });
+
+        let totalAssigned = 0;
+        const daysPayload = scheduleDays.map(rawDay => {
+          const day = window.dutyScheduler.migrateDayObject(rawDay);
+          const parts = String(day.dateKey || '').split('-');
+          const dateTr = parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : String(day.dateKey || '');
+          const slots = {};
+          activeCols.forEach(col => {
+            const val = day.isClosed ? '' : String(day[col.id] || '').trim();
+            slots[col.id] = val;
+            if (val) totalAssigned++;
+          });
+          const etutVal = day.isClosed ? '' : String(day.etut || '').trim();
+          slots.etut = etutVal;
+          if (etutVal) totalAssigned++;
+
+          return {
+            dateKey: day.dateKey,
+            dateTr,
+            dayName: day.dayName || '',
+            isWeekend: !!day.isWeekend,
+            isClosed: !!day.isClosed,
+            slots
+          };
+        });
+
+        const mName = window.dutyScheduler.monthNames[currentMonth] || 'AY';
+        const payload = {
+          format: 'pansiyon-nobet-eokul-v1',
+          exportedAt: new Date().toISOString(),
+          year: currentYear,
+          month: currentMonth,
+          monthName: mName,
+          schoolName: settings.schoolName || '',
+          columns: columnsMeta,
+          days: daysPayload
+        };
+
+        const jsonStr = JSON.stringify(payload, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentYear}_${mName}_eOkul_Nobet_Aktarim.json`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 400);
+
+        showToast(
+          'e-Okul Aktarım Dosyası Hazır',
+          `${currentYear} ${mName} (${totalAssigned} görev) indirildi. e-Okul Belletici Nöbet ekranını açıp tarayıcı eklentisinden bu dosyayı seçebilirsiniz.`,
+          'success'
+        );
+      } catch (err) {
+        console.error('e-Okul JSON aktarım hatası:', err);
+        alert('e-Okul aktarım dosyası oluşturulurken hata oluştu: ' + (err && err.message ? err.message : err));
+      }
+    });
   }
 
   // Excel Olarak İndir (.xlsx) - Dinamik Kız (0..3) + Erkek (0..3) = Toplam 1..6 Sütun Destekli Şablon Formatında
@@ -3134,14 +3348,6 @@
       btnEl.textContent = '⏳ PDF Oluşturuluyor...';
     }
 
-    const opt = {
-      margin: [5, 5, 5, 5],
-      filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    };
-
     const cleanup = () => {
       paperEl.classList.remove('puantaj-pdf-export');
       if (btnEl) {
@@ -3150,7 +3356,13 @@
       }
     };
 
-    html2pdf().set(opt).from(paperEl).save().then(() => {
+    exportElementToSinglePagePdf(paperEl, {
+      filename,
+      orientation: 'landscape',
+      marginMm: 4,
+      targetCssWidth: 1120,
+      scale: 2
+    }).then(() => {
       cleanup();
     }).catch(err => {
       console.error('Puantaj PDF hatası:', err);
@@ -3720,7 +3932,7 @@
     });
 
     const exportButtons = [
-      btnExportPdf, btnExportExcel, btnPrint,
+      btnExportPdf, btnExportExcel, btnExportEokul, btnPrint,
       btnPuantajOwnPdf, btnPuantajOwnExcel, btnPuantajOwnPrint,
       btnPuantajOtherPdf, btnPuantajOtherExcel, btnPuantajOtherPrint
     ];

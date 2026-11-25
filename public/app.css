@@ -198,6 +198,16 @@ body {
   background-color: #b45309;
 }
 
+.btn-eokul {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  color: #ffffff;
+  border-color: #3730a3;
+}
+.btn-eokul:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%);
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.28);
+}
+
 .btn-outline-danger {
   background: transparent;
   border-color: #fca5a5;
@@ -1788,19 +1798,31 @@ body {
 }
 
 .pdf-single-page .roster-table.cols-dense {
-  font-size: 5.5pt !important;
+  font-size: 5.8pt !important;
   table-layout: fixed !important;
+}
+
+.pdf-single-page .roster-table.cols-dense thead th:first-child {
+  width: 54px !important;
+}
+
+.pdf-single-page .roster-table.cols-dense thead th:nth-child(2) {
+  width: 62px !important;
+}
+
+.pdf-single-page .roster-table.cols-dense thead th.col-signature {
+  width: 48px !important;
 }
 
 .pdf-single-page .roster-table.cols-dense th,
 .pdf-single-page .roster-table.cols-dense td {
-  padding: 1px 2px !important;
+  padding: 1.5px 2px !important;
   word-wrap: break-word !important;
   overflow-wrap: break-word !important;
 }
 
 .pdf-single-page .roster-table.cols-dense .teacher-slot-btn {
-  font-size: 5.3pt !important;
+  font-size: 5.5pt !important;
   white-space: normal !important;
   word-break: break-word !important;
 }
@@ -1863,12 +1885,19 @@ body {
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
-  font-size: 6.2pt !important; /* Günlerin yazılı olduğu punto ile birebir aynı */
+  font-size: 7.4pt !important;
   background: transparent !important;
   background-color: transparent !important;
   color: #000000 !important;
   font-weight: 600 !important;
-  line-height: 1.15 !important;
+  line-height: 1.18 !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+
+.pdf-single-page .has-conflict::after {
+  display: none !important;
+  content: none !important;
 }
 
 /* Kaydedilen PDF'te aynı gün (kırmızı) ve arka arkaya gün (sarı) işaretlemelerini kaldır */
@@ -1898,140 +1927,294 @@ body {
 
 .pdf-single-page .slot-empty {
   color: #94a3b8 !important;
-  font-size: 6.2pt !important;
+  font-size: 6.4pt !important;
 }
 
-/* html2pdf ile tek sayfaya sığdırma ve punto küçültme kuralları */
+/* html2pdf ile tek A4 sayfaya tam sığdırma (A4 Dikey: 794px tam genişlik) */
 .pdf-single-page {
-  width: 760px !important;
-  max-width: 760px !important;
-  padding: 4px 6px !important;
+  width: 794px !important;
+  min-width: 794px !important;
+  max-width: 794px !important;
+  padding: 6px 8px !important;
   margin: 0 auto !important;
   background: #ffffff !important;
   border: none !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
   box-sizing: border-box !important;
 }
 
 .pdf-single-page .official-header {
   border-bottom: 1.5px solid #000000 !important;
-  margin-bottom: 4px !important;
-  padding-bottom: 3px !important;
+  margin-bottom: 7px !important;
+  padding-bottom: 5px !important;
 }
 
 .pdf-single-page .header-line-1 {
-  font-size: 7pt !important;
-  letter-spacing: 1px !important;
-  line-height: 1.1 !important;
+  font-size: 8pt !important;
+  letter-spacing: 1.2px !important;
+  line-height: 1.15 !important;
 }
 
 .pdf-single-page .header-line-2 {
-  font-size: 7.5pt !important;
-  line-height: 1.1 !important;
+  font-size: 8.5pt !important;
+  line-height: 1.15 !important;
 }
 
 .pdf-single-page .header-line-3 {
-  font-size: 8.5pt !important;
+  font-size: 9.8pt !important;
   color: #000000 !important;
-  line-height: 1.15 !important;
-  margin: 1px 0 !important;
+  line-height: 1.2 !important;
+  margin: 1.5px 0 !important;
 }
 
 .pdf-single-page .header-line-4 {
-  font-size: 8pt !important;
-  line-height: 1.15 !important;
-  margin-top: 1px !important;
+  font-size: 9pt !important;
+  line-height: 1.2 !important;
+  margin-top: 2px !important;
 }
 
 .pdf-single-page .table-responsive {
-  margin-bottom: 4px !important;
+  margin-bottom: 7px !important;
   overflow: visible !important;
+  width: 100% !important;
 }
 
 .pdf-single-page .roster-table {
   width: 100% !important;
-  font-size: 6.5pt !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+  font-size: 7.4pt !important;
   border-collapse: collapse !important;
+}
+
+.pdf-single-page .roster-table thead th {
+  width: auto !important;
+  background-color: #f1f5f9 !important;
+  font-size: 7.2pt !important;
+  padding: 4px 2px !important;
+  line-height: 1.15 !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.pdf-single-page .roster-table thead th:first-child {
+  width: 66px !important;
+}
+
+.pdf-single-page .roster-table thead th:nth-child(2) {
+  width: 74px !important;
+}
+
+.pdf-single-page .roster-table thead th.col-signature {
+  width: 62px !important;
 }
 
 .pdf-single-page .roster-table th,
 .pdf-single-page .roster-table td {
   border: 1px solid #475569 !important;
-  padding: 1px 2px !important;
-  line-height: 1.1 !important;
-  height: 14px !important;
+  padding: 2.5px 3px !important;
+  line-height: 1.18 !important;
+  height: 19px !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
 }
 
-.pdf-single-page .roster-table thead th {
-  background-color: #f1f5f9 !important;
-  font-size: 6.5pt !important;
-  padding: 2px 2px !important;
+.pdf-single-page .roster-table tbody td:first-child,
+.pdf-single-page .roster-table tbody td:nth-child(2) {
+  white-space: nowrap !important;
 }
 
 .pdf-single-page .closed-cell-banner {
-  padding: 2px !important;
-  font-size: 6.5pt !important;
+  padding: 2.5px !important;
+  font-size: 7.2pt !important;
   letter-spacing: 1px !important;
 }
 
 .pdf-single-page .stats-section {
-  margin-top: 4px !important;
-  padding-top: 3px !important;
+  margin-top: 7px !important;
+  padding-top: 5px !important;
   border-top: 1px solid #cbd5e1 !important;
 }
 
 .pdf-single-page .section-title {
-  font-size: 7pt !important;
-  margin-bottom: 3px !important;
+  font-size: 7.8pt !important;
+  margin-bottom: 4px !important;
 }
 
 .pdf-single-page .stats-tables-grid {
   display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 6px !important;
+  grid-template-columns: 1fr 1.25fr !important;
+  gap: 8px !important;
+}
+
+.pdf-single-page .stats-card {
+  overflow: visible !important;
 }
 
 .pdf-single-page .stats-card-title {
-  font-size: 6.5pt !important;
-  padding: 2px 4px !important;
+  font-size: 7.2pt !important;
+  padding: 3px 5px !important;
 }
 
 .pdf-single-page .stats-table {
-  font-size: 5.8pt !important;
+  width: 100% !important;
+  font-size: 6.6pt !important;
+}
+
+.pdf-single-page .stats-table span {
+  font-size: inherit !important;
 }
 
 .pdf-single-page .stats-table th,
 .pdf-single-page .stats-table td {
-  padding: 1px 2px !important;
-  line-height: 1.05 !important;
+  padding: 2px 3px !important;
+  line-height: 1.15 !important;
 }
 
 .pdf-single-page .official-footer {
-  margin-top: 6px !important;
-  padding-top: 3px !important;
+  margin-top: 12px !important;
+  padding-top: 6px !important;
 }
 
 .pdf-single-page .signature-date {
-  font-size: 6.5pt !important;
-  line-height: 1.2 !important;
+  font-size: 7.8pt !important;
+  line-height: 1.3 !important;
 }
 
 .pdf-single-page .signatures-wrapper {
   display: flex !important;
-  gap: 30px !important;
+  gap: 44px !important;
 }
 
 .pdf-single-page .sig-box {
-  min-width: 120px !important;
+  min-width: 145px !important;
 }
 
 .pdf-single-page .sig-name {
-  font-size: 7pt !important;
-  margin-bottom: 1px !important;
+  font-size: 8.2pt !important;
+  margin-bottom: 2px !important;
 }
 
 .pdf-single-page .sig-title {
+  font-size: 7pt !important;
+}
+
+/* Özet tablo kapalıyken sayfayı ferah ve tam okunaklı doldur */
+.pdf-single-page.pdf-spacious {
+  padding: 12px 10px !important;
+}
+
+.pdf-single-page.pdf-spacious .official-header {
+  margin-bottom: 10px !important;
+  padding-bottom: 7px !important;
+}
+
+.pdf-single-page.pdf-spacious .header-line-1 { font-size: 9pt !important; }
+.pdf-single-page.pdf-spacious .header-line-2 { font-size: 9.5pt !important; }
+.pdf-single-page.pdf-spacious .header-line-3 { font-size: 11pt !important; }
+.pdf-single-page.pdf-spacious .header-line-4 { font-size: 10pt !important; margin-top: 3px !important; }
+
+.pdf-single-page.pdf-spacious .roster-table {
+  font-size: 8.6pt !important;
+}
+
+.pdf-single-page.pdf-spacious .roster-table thead th {
+  font-size: 8.2pt !important;
+  padding: 6px 3px !important;
+}
+
+.pdf-single-page.pdf-spacious .roster-table thead th:first-child { width: 72px !important; }
+.pdf-single-page.pdf-spacious .roster-table thead th:nth-child(2) { width: 82px !important; }
+.pdf-single-page.pdf-spacious .roster-table thead th.col-signature { width: 70px !important; }
+
+.pdf-single-page.pdf-spacious .roster-table th,
+.pdf-single-page.pdf-spacious .roster-table td {
+  padding: 4.5px 4px !important;
+  height: 27px !important;
+  line-height: 1.22 !important;
+}
+
+.pdf-single-page.pdf-spacious .roster-table .teacher-slot-btn {
+  font-size: 8.5pt !important;
+  line-height: 1.22 !important;
+}
+
+.pdf-single-page.pdf-spacious .roster-table.cols-dense thead th:first-child { width: 58px !important; }
+.pdf-single-page.pdf-spacious .roster-table.cols-dense thead th:nth-child(2) { width: 66px !important; }
+.pdf-single-page.pdf-spacious .roster-table.cols-dense thead th.col-signature { width: 52px !important; }
+
+.pdf-single-page.pdf-spacious .roster-table.cols-dense .teacher-slot-btn {
+  font-size: 7pt !important;
+}
+
+.pdf-single-page.pdf-spacious .official-footer {
+  margin-top: 22px !important;
+  padding-top: 8px !important;
+}
+
+.pdf-single-page.pdf-spacious .signature-date { font-size: 9pt !important; }
+.pdf-single-page.pdf-spacious .sig-name { font-size: 9.5pt !important; }
+.pdf-single-page.pdf-spacious .sig-title { font-size: 8pt !important; }
+
+/* Çok öğretmenli özet tablosu açıkken tam genişlikte sıkı tek sayfa düzeni */
+.pdf-single-page.pdf-compact {
+  padding: 4px 6px !important;
+}
+
+.pdf-single-page.pdf-compact .official-header {
+  margin-bottom: 3px !important;
+  padding-bottom: 2px !important;
+}
+
+.pdf-single-page.pdf-compact .header-line-1 { font-size: 6.8pt !important; }
+.pdf-single-page.pdf-compact .header-line-2 { font-size: 7.2pt !important; }
+.pdf-single-page.pdf-compact .header-line-3 { font-size: 8.2pt !important; }
+.pdf-single-page.pdf-compact .header-line-4 { font-size: 7.8pt !important; margin-top: 1px !important; }
+
+.pdf-single-page.pdf-compact .roster-table {
+  font-size: 6.2pt !important;
+}
+
+.pdf-single-page.pdf-compact .roster-table th,
+.pdf-single-page.pdf-compact .roster-table td {
+  padding: 1px 2px !important;
+  height: 13.5px !important;
+  line-height: 1.08 !important;
+}
+
+.pdf-single-page.pdf-compact .roster-table .teacher-slot-btn {
   font-size: 6pt !important;
+  line-height: 1.08 !important;
+}
+
+.pdf-single-page.pdf-compact .roster-table.cols-dense .teacher-slot-btn {
+  font-size: 5.2pt !important;
+}
+
+.pdf-single-page.pdf-compact .stats-section {
+  margin-top: 3px !important;
+  padding-top: 2px !important;
+}
+
+.pdf-single-page.pdf-compact .section-title {
+  font-size: 6.5pt !important;
+  margin-bottom: 2px !important;
+}
+
+.pdf-single-page.pdf-compact .stats-table {
+  font-size: 5.4pt !important;
+}
+
+.pdf-single-page.pdf-compact .stats-table th,
+.pdf-single-page.pdf-compact .stats-table td {
+  padding: 1px 2px !important;
+  line-height: 1.02 !important;
+}
+
+.pdf-single-page.pdf-compact .official-footer {
+  margin-top: 5px !important;
+  padding-top: 2px !important;
 }
 
 /* ================= KULLANICI GİRİŞ PANELİ & YETKİ YÖNETİMİ ================= */
@@ -2787,13 +2970,16 @@ body {
 
 /* Puantaj A4 Yatay (Landscape) Tek Sayfa PDF Dışa Aktarım Modu */
 .puantaj-pdf-export {
-  width: 1060px !important;
-  max-width: 1060px !important;
+  width: 1120px !important;
+  min-width: 1120px !important;
+  max-width: 1120px !important;
   padding: 8px 10px !important;
   margin: 0 auto !important;
   border: none !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
   background: #ffffff !important;
+  box-sizing: border-box !important;
 }
 
 .puantaj-pdf-export .puantaj-official-title {
@@ -2803,19 +2989,21 @@ body {
 }
 
 .puantaj-pdf-export .puantaj-meta-grid {
-  font-size: 7.5pt !important;
+  font-size: 7.8pt !important;
   margin-bottom: 5px !important;
   line-height: 1.35 !important;
 }
 
 .puantaj-pdf-export .puantaj-table-wrap {
   overflow: visible !important;
+  width: 100% !important;
 }
 
 .puantaj-pdf-export .puantaj-table {
-  font-size: 6.2pt !important;
+  font-size: 6.4pt !important;
   table-layout: fixed !important;
   width: 100% !important;
+  max-width: 100% !important;
 }
 
 .puantaj-pdf-export .puantaj-table th,
@@ -2826,13 +3014,14 @@ body {
 }
 
 .puantaj-pdf-export .puantaj-table .pt-col-no {
-  width: 24px !important;
+  width: 26px !important;
+  min-width: 0 !important;
 }
 
 .puantaj-pdf-export .puantaj-table .pt-col-name {
-  width: 138px !important;
-  min-width: 138px !important;
-  font-size: 6.1pt !important;
+  width: 150px !important;
+  min-width: 0 !important;
+  font-size: 6.2pt !important;
   padding-left: 3px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -2840,9 +3029,9 @@ body {
 }
 
 .puantaj-pdf-export .puantaj-table .pt-col-school {
-  width: 152px !important;
-  min-width: 152px !important;
-  font-size: 5.7pt !important;
+  width: 164px !important;
+  min-width: 0 !important;
+  font-size: 5.8pt !important;
   padding-left: 3px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -2850,18 +3039,19 @@ body {
 }
 
 .puantaj-pdf-export .puantaj-table .pt-col-day {
-  width: 21px !important;
-  min-width: 21px !important;
-  font-size: 6pt !important;
+  width: 23px !important;
+  min-width: 0 !important;
+  font-size: 6.1pt !important;
 }
 
 .puantaj-pdf-export .puantaj-table .pt-col-day-name {
-  font-size: 5.2pt !important;
+  font-size: 5.3pt !important;
 }
 
 .puantaj-pdf-export .puantaj-table .pt-col-total {
-  width: 44px !important;
-  font-size: 6.2pt !important;
+  width: 47px !important;
+  min-width: 0 !important;
+  font-size: 6.3pt !important;
 }
 
 .puantaj-pdf-export .puantaj-cert-text {
@@ -2944,6 +3134,11 @@ body {
     font-weight: 600 !important;
   }
 
+  .has-conflict::after {
+    display: none !important;
+    content: none !important;
+  }
+
   /* Yazdırma çıktısında aynı gün (kırmızı) ve arka arkaya gün (sarı) işaretlemelerini kaldır */
   .slot-container .teacher-slot-btn.slot-duplicate-row,
   .teacher-slot-btn.slot-duplicate-row,
@@ -2984,21 +3179,31 @@ body {
 
   .roster-table {
     font-size: 6.5pt !important;
+    table-layout: fixed !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .roster-table th, .roster-table td {
     border: 1px solid #475569 !important;
     padding: 1px 2px !important;
     line-height: 1.1 !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
   }
 
   .roster-table thead th {
+    width: auto !important;
     background-color: #f1f5f9 !important;
     font-size: 6.5pt !important;
     padding: 2px 2px !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
+  .roster-table thead th:first-child { width: 58px !important; }
+  .roster-table thead th:nth-child(2) { width: 66px !important; }
+  .roster-table thead th.col-signature { width: 54px !important; }
 
   .stats-section {
     margin-top: 4px !important;
