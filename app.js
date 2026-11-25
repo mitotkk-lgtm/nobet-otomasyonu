@@ -1,0 +1,4295 @@
+/**
+ * Pansiyon Belletmen Nöbet Dağıtım Uygulaması (Main Application Controller)
+ */
+
+(() => {
+  // DOM Seçiciler
+  const selectMonth = document.getElementById('select-month');
+  const selectYear = document.getElementById('select-year');
+  const btnQuickDistribute = document.getElementById('btn-quick-distribute');
+  const btnClearSchedule = document.getElementById('btn-clear-schedule');
+  const activeDaysCountEl = document.getElementById('active-days-count');
+  const closedDaysCountEl = document.getElementById('closed-days-count');
+
+  // Çizelge ve Tablo DOM
+  const rosterTable = document.getElementById('roster-table');
+  const rosterThead = document.getElementById('roster-thead');
+  const rosterTbody = document.getElementById('roster-tbody');
+  const femaleStatsTbody = document.getElementById('female-stats-tbody');
+  const maleStatsTbody = document.getElementById('male-stats-tbody');
+  const btnConfigColumns = document.getElementById('btn-config-columns');
+  const activeColumnsCountEl = document.getElementById('active-columns-count');
+
+  // Sütun Yapılandırma Modal DOM
+  const modalColumnsConfig = document.getElementById('modal-columns-config');
+  const mFemaleCountPicker = document.getElementById('m-female-count-picker');
+  const mMaleCountPicker = document.getElementById('m-male-count-picker');
+  const mColumnsTotalBadge = document.getElementById('m-columns-total-badge');
+  const mColumnsConfigList = document.getElementById('m-columns-config-list');
+  const btnColumnsModalClose = document.getElementById('btn-columns-modal-close');
+  const btnColumnsModalCancel = document.getElementById('btn-columns-modal-cancel');
+  const btnColumnsModalApply = document.getElementById('btn-columns-modal-apply');
+  const btnColumnsModalApplyRedistribute = document.getElementById('btn-columns-modal-apply-redistribute');
+
+  // Başlık ve İmzalar DOM
+  const dispInstTop = document.getElementById('disp-inst-top');
+  const dispInstMid = document.getElementById('disp-inst-mid');
+  const dispSchoolName = document.getElementById('disp-school-name');
+  const dispRosterTitle = document.getElementById('disp-roster-title');
+  const dispApprovalDate = document.getElementById('disp-approval-date');
+  const dispVicePrincipal = document.getElementById('disp-vice-principal');
+  const dispViceTitle = document.getElementById('disp-vice-title');
+  const dispPrincipal = document.getElementById('disp-principal');
+  const dispPrincipalTitle = document.getElementById('disp-principal-title');
+
+  // Navigasyon ve Sekmeler
+  const navTabs = document.querySelectorAll('.nav-tab');
+  const tabPanes = document.querySelectorAll('.tab-pane');
+
+  // Üst Bar & Dışa Aktarma Butonları
+  const btnSaveSchedule = document.getElementById('btn-save-schedule');
+  const btnExportPdf = document.getElementById('btn-export-pdf');
+  const btnExportExcel = document.getElementById('btn-export-excel');
+  const btnPrint = document.getElementById('btn-print');
+
+  // Sihirbaz (Wizard) DOM
+  const btnOpenWizard = document.getElementById('btn-open-wizard');
+  const modalWizard = document.getElementById('modal-wizard');
+  const btnWizardClose = document.getElementById('btn-wizard-close');
+  const wBtnPrev = document.getElementById('w-btn-prev');
+  const wBtnNext = document.getElementById('w-btn-next');
+  const wBtnFinish = document.getElementById('w-btn-finish');
+  const wizardSteps = document.querySelectorAll('.wizard-step');
+  const stepBubbles = document.querySelectorAll('.step-bubble');
+
+  const wSelectMonth = document.getElementById('w-select-month');
+  const wInputYear = document.getElementById('w-input-year');
+  const wDispMonthDays = document.getElementById('w-disp-month-days');
+  const wFemaleCountPicker = document.getElementById('w-female-count-picker');
+  const wMaleCountPicker = document.getElementById('w-male-count-picker');
+  const wColumnsTotalBadge = document.getElementById('w-columns-total-badge');
+  const wColumnsConfigList = document.getElementById('w-columns-config-list');
+  const wCalendarContainer = document.getElementById('w-calendar-container');
+  const wBtnAratatil = document.getElementById('w-btn-aratatil');
+  const wBtnOpenAll = document.getElementById('w-btn-open-all');
+
+  const wSelectTeacher = document.getElementById('w-select-teacher');
+  const wTeacherExempt = document.getElementById('w-teacher-exempt');
+  const wTeacherDatesGrid = document.getElementById('w-teacher-dates-grid');
+  const wDayBlocks = document.querySelectorAll('.w-day-block');
+  const wBtnSaveConstraint = document.getElementById('w-btn-save-teacher-constraint');
+  const wActiveConstraintsList = document.getElementById('w-active-constraints-list');
+
+  // Manuel Slot Edit Modal DOM
+  const modalSlotEdit = document.getElementById('modal-slot-edit');
+  const btnSlotModalClose = document.getElementById('btn-slot-modal-close');
+  const btnSlotCancel = document.getElementById('btn-slot-cancel');
+  const btnSlotClear = document.getElementById('btn-slot-clear');
+  const slotInfoDate = document.getElementById('slot-info-date');
+  const slotInfoRole = document.getElementById('slot-info-role');
+  const slotCurrentTeacher = document.getElementById('slot-current-teacher');
+  const slotCandidateSearch = document.getElementById('slot-candidate-search');
+  const candidateTeachersList = document.getElementById('candidate-teachers-list');
+
+  // Öğretmen Yönetimi DOM
+  const femaleTeachersListEl = document.getElementById('female-teachers-list');
+  const maleTeachersListEl = document.getElementById('male-teachers-list');
+  const femaleCountEl = document.getElementById('female-count');
+  const maleCountEl = document.getElementById('male-count');
+  const btnAddTeacher = document.getElementById('btn-add-teacher');
+  const modalTeacherEdit = document.getElementById('modal-teacher-edit');
+  const teacherModalTitle = document.getElementById('teacher-modal-title');
+  const btnTeacherModalClose = document.getElementById('btn-teacher-modal-close');
+  const teacherForm = document.getElementById('teacher-form');
+  const teacherInputId = document.getElementById('teacher-input-id');
+  const teacherInputName = document.getElementById('teacher-input-name');
+  const teacherInputGender = document.getElementById('teacher-input-gender');
+  const teacherSchoolOwn = document.getElementById('teacher-school-own');
+  const teacherSchoolOther = document.getElementById('teacher-school-other');
+  const teacherOtherSchoolGroup = document.getElementById('teacher-other-school-group');
+  const teacherInputSchoolName = document.getElementById('teacher-input-school-name');
+  const teacherInputEtut = document.getElementById('teacher-input-etut');
+  const teacherInputActive = document.getElementById('teacher-input-active');
+  const fileExcelUpload = document.getElementById('file-excel-upload');
+
+  // Tatil Yönetimi Tab 3 DOM
+  const calendarGrid = document.getElementById('calendar-grid');
+  const btnPresetAratatil = document.getElementById('btn-preset-aratatil');
+  const btnPresetAllOpen = document.getElementById('btn-preset-all-open');
+
+  // Ayarlar Formu DOM
+  const settingsForm = document.getElementById('settings-form');
+  const settingInstTop = document.getElementById('setting-inst-top');
+  const settingInstMid = document.getElementById('setting-inst-mid');
+  const settingSchoolName = document.getElementById('setting-school-name');
+  const settingDistrict = document.getElementById('setting-district');
+  const settingNobetHours = document.getElementById('setting-nobet-hours');
+  const settingEtutHours = document.getElementById('setting-etut-hours');
+  const settingApprovalDate = document.getElementById('setting-approval-date');
+  const settingVicePrincipal = document.getElementById('setting-vice-principal');
+  const settingViceTitle = document.getElementById('setting-vice-title');
+  const settingPrincipal = document.getElementById('setting-principal');
+  const settingPrincipalTitle = document.getElementById('setting-principal-title');
+  const btnResetDefaults = document.getElementById('btn-reset-defaults');
+
+  // Uygulama Durumu (State)
+  let currentYear = 2026;
+  let currentMonth = 10; // Kasım (0-indexli)
+  let teachers = [];
+  let closedDates = {}; // { '2026-11-14': 'ARA TATİL' }
+  let scheduleDays = [];
+  let dutyColumns = window.dutyScheduler.getDefaultDutyColumns(); // Kız 0..3 + Erkek 0..3 = Toplam 1..6 dinamik belletici sütunu
+  let monthlySchedules = {}; // { '2026_10': [...], '2026_11': [...] }
+  let monthlyClosedDates = {}; // { '2026_10': { ... } }
+  let monthlyDutyColumns = {}; // { '2026_10': [...] }
+  let wizardDutyColumns = window.dutyScheduler.getDefaultDutyColumns();
+  let modalDutyColumns = window.dutyScheduler.getDefaultDutyColumns();
+  let currentWizardStep = 1;
+  let editingSlot = null; // { dayIndex, role: 'kiz1'|'kiz2'|'kiz3'|'erkek1'|'erkek2'|'erkek3'|'etut' }
+
+  // Dinamik Sütun Yardımcıları (Kız maks. 3 + Erkek maks. 3 = Toplam maks. 6 belletici sütunu)
+  const MAX_PER_GENDER = 3;
+  const MAX_DUTY_COLUMNS = 6;
+  const AUTO_TITLES_PATTERN = /^(KIZ PANSİYONU|ERKEK PANSİYONU|NÖBETÇİ BELLETMEN)(\s*\(\d+\))?$/;
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function getActiveColumnIds() {
+    return dutyColumns.map(c => c.id);
+  }
+
+  function getColumnStyleMeta(gender) {
+    if (gender === 'K') {
+      return { thClass: 'col-female', slotClass: 'slot-female', badgeClass: 'badge-female' };
+    }
+    return { thClass: 'col-male', slotClass: 'slot-male', badgeClass: 'badge-male' };
+  }
+
+  function refreshAutoTitles(cols) {
+    const fCount = cols.filter(c => c.gender === 'K').length;
+    const mCount = cols.filter(c => c.gender === 'E').length;
+    let fIdx = 0;
+    let mIdx = 0;
+
+    cols.forEach(c => {
+      const isAuto = !c.title || AUTO_TITLES_PATTERN.test(c.title.trim());
+      if (c.gender === 'K') {
+        fIdx++;
+        if (isAuto) c.title = fCount === 1 ? 'KIZ PANSİYONU' : `KIZ PANSİYONU (${fIdx})`;
+      } else {
+        mIdx++;
+        if (isAuto) c.title = mCount === 1 ? 'ERKEK PANSİYONU' : `ERKEK PANSİYONU (${mIdx})`;
+      }
+    });
+  }
+
+  function rebuildDraftColumns(draftCols, newFemaleCount, newMaleCount) {
+    const fCount = Math.min(MAX_PER_GENDER, Math.max(0, parseInt(newFemaleCount, 10) || 0));
+    const mCount = Math.min(MAX_PER_GENDER, Math.max(0, parseInt(newMaleCount, 10) || 0));
+
+    // Otomatik başlıklara sahip sütunların yeni sayıya göre yeniden adlandırılması için sıfırla
+    const cleanedExisting = (draftCols || []).map(c => ({
+      ...c,
+      title: AUTO_TITLES_PATTERN.test((c.title || '').trim()) ? '' : c.title
+    }));
+
+    const next = window.dutyScheduler.buildDutyColumns(fCount, mCount, cleanedExisting);
+    refreshAutoTitles(next);
+    return next;
+  }
+
+  function renderColumnsConfigEditor(cfg) {
+    const { femalePicker, malePicker, totalBadge, listEl, getCols, setCols } = cfg;
+    if (!femalePicker || !malePicker || !listEl) return;
+
+    const cols = window.dutyScheduler.normalizeDutyColumns(getCols());
+    setCols(cols);
+
+    const femaleCount = cols.filter(c => c.gender === 'K').length;
+    const maleCount = cols.filter(c => c.gender === 'E').length;
+
+    if (totalBadge) {
+      totalBadge.textContent = `Toplam: ${femaleCount + maleCount} / ${MAX_DUTY_COLUMNS} Sütun (Kız: ${femaleCount}, Erkek: ${maleCount})`;
+    }
+
+    femalePicker.querySelectorAll('.col-count-btn').forEach(btn => {
+      const val = parseInt(btn.dataset.count, 10);
+      btn.classList.toggle('active', val === femaleCount);
+      btn.onclick = () => {
+        if (val === 0 && maleCount === 0) {
+          showToast('Uyarı', 'En az 1 nöbetçi belletici sütunu seçili olmalıdır.', 'error');
+          return;
+        }
+        const updated = rebuildDraftColumns(getCols(), val, maleCount);
+        setCols(updated);
+        renderColumnsConfigEditor(cfg);
+      };
+    });
+
+    malePicker.querySelectorAll('.col-count-btn').forEach(btn => {
+      const val = parseInt(btn.dataset.count, 10);
+      btn.classList.toggle('active', val === maleCount);
+      btn.onclick = () => {
+        if (val === 0 && femaleCount === 0) {
+          showToast('Uyarı', 'En az 1 nöbetçi belletici sütunu seçili olmalıdır.', 'error');
+          return;
+        }
+        const updated = rebuildDraftColumns(getCols(), femaleCount, val);
+        setCols(updated);
+        renderColumnsConfigEditor(cfg);
+      };
+    });
+
+    listEl.innerHTML = '';
+    let fSeq = 0;
+    let mSeq = 0;
+    cols.forEach((col, idx) => {
+      const meta = getColumnStyleMeta(col.gender);
+      const badgeLabel = col.gender === 'K' ? `👩 Kız ${++fSeq}` : `👨 Erkek ${++mSeq}`;
+      const row = document.createElement('div');
+      row.className = 'col-config-row';
+      row.innerHTML = `
+        <span class="col-config-badge ${meta.badgeClass}">${badgeLabel}</span>
+        <input type="text" class="form-control col-title-input" value="${escapeHtml(col.title)}" placeholder="Sütun başlığı" style="font-size: 0.82rem; padding: 5px 9px;">
+      `;
+
+      const titleInput = row.querySelector('.col-title-input');
+      titleInput.addEventListener('input', () => {
+        const current = getCols();
+        current[idx].title = titleInput.value;
+        setCols(current);
+      });
+
+      listEl.appendChild(row);
+    });
+  }
+
+  function updateColumnsCountBadge() {
+    if (activeColumnsCountEl) {
+      activeColumnsCountEl.textContent = String(dutyColumns.length);
+    }
+  }
+
+  function migrateScheduleDaysList(daysList, legacyCols = null) {
+    if (!Array.isArray(daysList)) return [];
+    return daysList.map(d => window.dutyScheduler.migrateDayObject(d, legacyCols));
+  }
+
+  function normalizeTeacherRecord(t) {
+    if (!t || typeof t !== 'object') return t;
+    const schoolType = t.schoolType === 'other' ? 'other' : 'own';
+    const schoolName = schoolType === 'other' ? String(t.schoolName || '').trim() : '';
+    return {
+      ...t,
+      schoolType,
+      schoolName
+    };
+  }
+
+  function getTeacherDisplaySchool(t) {
+    if (t && t.schoolType === 'other') {
+      return (t.schoolName && t.schoolName.trim()) ? t.schoolName.trim() : 'Diğer Okul';
+    }
+    return (settings && settings.schoolName && settings.schoolName.trim()) ? settings.schoolName.trim() : 'Kendi Okulu';
+  }
+
+  function getDefaultSettings(isAdminUser = false) {
+    const y = new Date().getFullYear();
+    if (isAdminUser) {
+      return {
+        instTop: 'T.C.',
+        instMid: 'MİLLİ EĞİTİM BAKANLIĞI',
+        schoolName: 'ANADOLU LİSESİ MÜDÜRLÜĞÜ',
+        district: '',
+        nobetHours: 8,
+        etutHours: 4,
+        approvalDate: '... / ... / 2026\nUYGUNDUR',
+        vicePrincipal: 'Nebi DEMİR',
+        viceTitle: 'Pansiyondan Sorumlu Müdür Yardımcısı',
+        principal: 'Hayrullah YILDIRIM',
+        principalTitle: 'Okul Müdürü'
+      };
+    }
+    return {
+      instTop: 'T.C.',
+      instMid: 'MİLLİ EĞİTİM BAKANLIĞI',
+      schoolName: 'OKUL / KURUM ADI MÜDÜRLÜĞÜ',
+      district: '',
+      nobetHours: 8,
+      etutHours: 4,
+      approvalDate: `... / ... / ${y}\nUYGUNDUR`,
+      vicePrincipal: 'Müdür Yardımcısı Adı Soyadı',
+      viceTitle: 'Pansiyondan Sorumlu Müdür Yardımcısı',
+      principal: 'Okul Müdürü Adı Soyadı',
+      principalTitle: 'Okul Müdürü'
+    };
+  }
+
+  let settings = getDefaultSettings(false);
+
+  // KULLANICI BAZLI İZOLE LOCAL STORAGE & VERİ TABANI ANAHTARI
+  const STORAGE_KEY = 'pansiyon_nobet_data_v1';
+
+  function getActiveStorageKey() {
+    const user = window.authManager ? window.authManager.getCurrentUser() : null;
+    if (!user) return null;
+    if (user.id === 'admin_nebi' || (user.username && user.username.toLowerCase() === 'nebi')) {
+      return STORAGE_KEY;
+    }
+    return `${STORAGE_KEY}_user_${user.id}`;
+  }
+
+  function resetInMemoryWorkspaceState(isAdminUser = false) {
+    const now = new Date();
+    currentYear = isAdminUser ? 2026 : now.getFullYear();
+    currentMonth = isAdminUser ? 10 : now.getMonth();
+    teachers = [];
+    closedDates = {};
+    scheduleDays = [];
+    dutyColumns = window.dutyScheduler.getDefaultDutyColumns();
+    monthlySchedules = {};
+    monthlyClosedDates = {};
+    monthlyDutyColumns = {};
+    settings = getDefaultSettings(isAdminUser);
+    hasUnsavedChanges = false;
+    const badge = document.getElementById('header-last-saved');
+    if (badge) badge.style.display = 'none';
+  }
+
+  let toastContainer = null;
+  function showToast(title, desc = '', type = 'success') {
+    if (!toastContainer) {
+      toastContainer = document.querySelector('.app-toast-container');
+      if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'app-toast-container';
+        document.body.appendChild(toastContainer);
+      }
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `app-toast toast-${type}`;
+    
+    let icon = '💾';
+    if (type === 'error') icon = '❌';
+    else if (type === 'info') icon = 'ℹ️';
+
+    toast.innerHTML = `
+      <div class="app-toast-icon">${icon}</div>
+      <div class="app-toast-content">
+        <div class="app-toast-title">${title}</div>
+        ${desc ? `<div class="app-toast-desc">${desc}</div>` : ''}
+      </div>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+    });
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 350);
+    }, 4000);
+  }
+
+  let hasUnsavedChanges = false;
+
+  function markAsUnsaved() {
+    hasUnsavedChanges = true;
+    const badge = document.getElementById('header-last-saved');
+    const textEl = document.getElementById('last-saved-text');
+    if (badge && textEl) {
+      badge.style.display = 'inline-flex';
+      badge.className = 'last-saved-badge unsaved';
+      textEl.textContent = '⚠️ Kaydedilmemiş Değişiklikler Var (Kaydet Butonuna Basın)';
+    }
+  }
+
+  function updateLastSavedUI(timeStr) {
+    const badge = document.getElementById('header-last-saved');
+    const textEl = document.getElementById('last-saved-text');
+    if (badge && textEl && timeStr) {
+      badge.style.display = 'inline-flex';
+      badge.className = 'last-saved-badge saved';
+      textEl.textContent = `Son Kayıt: ${timeStr} (Kayıtlı)`;
+    }
+  }
+
+  function buildAppDataPayload() {
+    const monthKey = `${currentYear}_${currentMonth}`;
+    if (scheduleDays && scheduleDays.length > 0) {
+      monthlySchedules[monthKey] = JSON.parse(JSON.stringify(scheduleDays));
+    }
+    monthlyClosedDates[monthKey] = JSON.parse(JSON.stringify(closedDates));
+    monthlyDutyColumns[monthKey] = JSON.parse(JSON.stringify(dutyColumns));
+
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+    const lastSavedFormatted = `${dateStr} ${timeStr}`;
+    const curUser = window.authManager ? window.authManager.getCurrentUser() : null;
+
+    return {
+      currentYear,
+      currentMonth,
+      teachers,
+      scheduleDays,
+      dutyColumns,
+      monthlySchedules,
+      monthlyClosedDates,
+      monthlyDutyColumns,
+      settings,
+      lastSaved: lastSavedFormatted,
+      savedBy: curUser ? curUser.username : '',
+      lastSavedTimestamp: now.getTime()
+    };
+  }
+
+  function applyParsedAppData(parsed) {
+    if (!parsed || typeof parsed !== 'object') return false;
+
+    if (Array.isArray(parsed.teachers)) {
+      teachers = parsed.teachers.map(normalizeTeacherRecord);
+    }
+    if (parsed.settings) settings = { ...settings, ...parsed.settings };
+    if (parsed.currentYear !== undefined) currentYear = parseInt(parsed.currentYear, 10);
+    if (parsed.currentMonth !== undefined) currentMonth = parseInt(parsed.currentMonth, 10);
+
+    const rawMonthlyCols = parsed.monthlyDutyColumns || {};
+    if (parsed.monthlySchedules) {
+      monthlySchedules = {};
+      Object.keys(parsed.monthlySchedules).forEach(k => {
+        const legacyCols = rawMonthlyCols[k] || parsed.dutyColumns || null;
+        monthlySchedules[k] = migrateScheduleDaysList(parsed.monthlySchedules[k], legacyCols);
+      });
+    } else {
+      monthlySchedules = {};
+    }
+    monthlyClosedDates = parsed.monthlyClosedDates || {};
+    if (parsed.monthlyDutyColumns) {
+      monthlyDutyColumns = {};
+      Object.keys(parsed.monthlyDutyColumns).forEach(k => {
+        monthlyDutyColumns[k] = window.dutyScheduler.normalizeDutyColumns(parsed.monthlyDutyColumns[k]);
+      });
+    } else {
+      monthlyDutyColumns = {};
+    }
+
+    const mKey = `${currentYear}_${currentMonth}`;
+    const rawCurrentCols = rawMonthlyCols[mKey] || parsed.dutyColumns || null;
+    dutyColumns = window.dutyScheduler.normalizeDutyColumns(
+      (monthlyDutyColumns && monthlyDutyColumns[mKey]) || parsed.dutyColumns
+    );
+    monthlyDutyColumns[mKey] = JSON.parse(JSON.stringify(dutyColumns));
+
+    if (monthlySchedules[mKey] && Array.isArray(monthlySchedules[mKey]) && monthlySchedules[mKey].length > 0) {
+      scheduleDays = migrateScheduleDaysList(JSON.parse(JSON.stringify(monthlySchedules[mKey])), rawCurrentCols);
+    } else if (parsed.scheduleDays && Array.isArray(parsed.scheduleDays) && parsed.scheduleDays.length > 0) {
+      scheduleDays = migrateScheduleDaysList(JSON.parse(JSON.stringify(parsed.scheduleDays)), rawCurrentCols);
+      monthlySchedules[mKey] = scheduleDays;
+    } else {
+      scheduleDays = [];
+    }
+
+    closedDates = (monthlyClosedDates && monthlyClosedDates[mKey]) || parsed.closedDates || {};
+
+    if (parsed.lastSaved) {
+      const bySuffix = parsed.savedBy ? ` — ${parsed.savedBy}` : '';
+      updateLastSavedUI(`${parsed.lastSaved}${bySuffix}`);
+    } else {
+      const badge = document.getElementById('header-last-saved');
+      if (badge) badge.style.display = 'none';
+    }
+
+    hasUnsavedChanges = false;
+    return true;
+  }
+
+  function saveToLocalStorage(options = {}) {
+    if (window.authManager && window.authManager.isLoggedIn() && window.authManager.isExpired()) {
+      return false;
+    }
+    const activeKey = getActiveStorageKey();
+    if (!activeKey) return false;
+    try {
+      const data = buildAppDataPayload();
+      localStorage.setItem(activeKey, JSON.stringify(data));
+      localStorage.setItem(activeKey + '_backup', JSON.stringify(data));
+      hasUnsavedChanges = false;
+      const bySuffix = data.savedBy ? ` — ${data.savedBy}` : '';
+      updateLastSavedUI(`${data.lastSaved}${bySuffix}`);
+
+      if (!options.skipCloud && window.authManager && window.authManager.isCloudMode() && window.authManager.isLoggedIn()) {
+        window.authManager.saveCloudDataAsync(data).then(res => {
+          if (res && !res.ok && !res.skipped) {
+            console.warn('Bulut kayıt hatası:', res.error);
+            if (res.expired) syncAuthUI();
+          }
+        });
+      }
+      return true;
+    } catch (e) {
+      console.warn('LocalStorage kayıt hatası:', e);
+      return false;
+    }
+  }
+
+  function loadFromLocalStorage() {
+    const activeKey = getActiveStorageKey();
+    if (!activeKey) return false;
+    try {
+      let raw = localStorage.getItem(activeKey);
+      if (!raw) {
+        raw = localStorage.getItem(activeKey + '_backup');
+      }
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return applyParsedAppData(parsed);
+      }
+    } catch (e) {
+      console.warn('LocalStorage yükleme hatası:', e);
+    }
+    return false;
+  }
+
+  function renderFullWorkspaceUI() {
+    selectMonth.value = currentMonth;
+    selectYear.value = currentYear;
+    applySettingsToUI();
+    renderScheduleTable();
+    renderStatsTables();
+    renderTeachersList();
+    renderHolidaysCalendar();
+    renderPuantajTables();
+  }
+
+  async function loadActiveUserWorkspaceAsync(silent = true) {
+    const user = window.authManager ? window.authManager.getCurrentUser() : null;
+    if (!user) {
+      resetInMemoryWorkspaceState(false);
+      return false;
+    }
+
+    const isAdminUser = window.authManager.isAdmin(user);
+    resetInMemoryWorkspaceState(isAdminUser);
+
+    let loadedData = false;
+
+    if (window.authManager.isCloudMode()) {
+      const res = await window.authManager.loadCloudDataAsync();
+      if (res.ok && res.data) {
+        loadedData = applyParsedAppData(res.data);
+        const activeKey = getActiveStorageKey();
+        if (activeKey) {
+          try {
+            localStorage.setItem(activeKey, JSON.stringify(res.data));
+            localStorage.setItem(activeKey + '_backup', JSON.stringify(res.data));
+          } catch {
+            // ignore quota errors
+          }
+        }
+      } else if (!res.ok && !silent) {
+        showToast('Bulut Senkronizasyon Hatası', res.error || 'Veriler sunucudan alınamadı.', 'error');
+      }
+    } else {
+      loadedData = loadFromLocalStorage();
+    }
+
+    // Aktif kullanıcı için başlangıç çizelgesi / kadro durumu:
+    // - Ana yönetici (nebi): ilk açılışta varsayılan kadro ve Kasım 2026 dağıtımı hazır gelir
+    // - Yeni tanımlanan standart kullanıcı: öğretmen kadrosu ve nöbet çizelgesi TAMAMEN BOŞ başlar!
+    if (isAdminUser) {
+      if (!loadedData && teachers.length === 0) {
+        teachers = window.dutyScheduler.getDefaultTeachers();
+      }
+      if (!scheduleDays || scheduleDays.length === 0) {
+        closedDates = window.dutyScheduler.getDefaultClosedDates(currentYear, currentMonth);
+        runDistribution();
+        if (!loadedData) {
+          saveToLocalStorage();
+        }
+      }
+    } else {
+      if (!scheduleDays || scheduleDays.length === 0) {
+        scheduleDays = window.dutyScheduler.generateMonthDays(currentYear, currentMonth, closedDates);
+      }
+    }
+
+    hasUnsavedChanges = false;
+    renderFullWorkspaceUI();
+
+    if (!silent && window.authManager.isCloudMode()) {
+      showToast('Verileriniz Güncellendi ☁️', `${user.displayName || user.username} hesabına ait en son kayıtlar yüklendi.`, 'success');
+    }
+    return true;
+  }
+
+  async function syncFromCloudAsync(silent = false) {
+    return loadActiveUserWorkspaceAsync(silent);
+  }
+
+  async function handleManualSave() {
+    if (!ensureNotExpiredOrAlert()) return;
+    const activeKey = getActiveStorageKey();
+    if (!activeKey) return;
+    const isCloud = !!(window.authManager && window.authManager.isCloudMode() && window.authManager.isLoggedIn());
+    const data = buildAppDataPayload();
+
+    try {
+      localStorage.setItem(activeKey, JSON.stringify(data));
+      localStorage.setItem(activeKey + '_backup', JSON.stringify(data));
+    } catch (e) {
+      console.warn('LocalStorage kayıt hatası:', e);
+    }
+
+    if (isCloud) {
+      const origHtml = btnSaveSchedule ? btnSaveSchedule.innerHTML : '';
+      if (btnSaveSchedule) {
+        btnSaveSchedule.disabled = true;
+        btnSaveSchedule.innerHTML = '⏳ Buluta Kaydediliyor...';
+      }
+      try {
+        const cloudRes = await window.authManager.saveCloudDataAsync(data);
+        if (!cloudRes.ok) {
+          if (cloudRes.expired) syncAuthUI();
+          showToast('Bulut Kaydı Başarısız!', cloudRes.error || 'Sunucuya yazılamadı.', 'error');
+          alert(cloudRes.error || 'Bulut veritabanına kaydedilemedi.');
+          return;
+        }
+        hasUnsavedChanges = false;
+        const bySuffix = data.savedBy ? ` — ${data.savedBy}` : '';
+        updateLastSavedUI(`${data.lastSaved}${bySuffix} (Bulut)`);
+        showToast('Hesabınıza Kaydedildi! ☁️💾', 'Nöbet çizelgeniz, öğretmen listeniz ve ayarlarınız yalnızca sizin hesabınıza özel olarak buluta kaydedildi.', 'success');
+      } finally {
+        if (btnSaveSchedule) {
+          btnSaveSchedule.disabled = false;
+          btnSaveSchedule.innerHTML = origHtml || '<span>💾</span> Nöbetleri Kaydet';
+        }
+      }
+      return;
+    }
+
+    hasUnsavedChanges = false;
+    updateLastSavedUI(data.lastSaved);
+    showToast('Nöbetler Başarıyla Kaydedildi! 💾', 'Hesabınıza ait son nöbet çizelgesi güvenle kaydedildi.', 'success');
+  }
+
+  function revertToLastSaved() {
+    if (!ensureNotExpiredOrAlert()) return;
+    if (!hasUnsavedChanges) {
+      showToast('Bilgi', 'Zaten en son kaydedilen durumdasınız, kaydedilmemiş değişiklik yok.', 'info');
+      return;
+    }
+    if (confirm('Kaydedilmemiş değişiklikleri iptal etmek ve en son kaydettiğiniz nöbet çizelgesine dönmek istiyor musunuz?')) {
+      const hasLoaded = loadFromLocalStorage();
+      if (!hasLoaded) {
+        showToast('Kayıt Bulunamadı', 'Geri yüklenecek kayıtlı veri bulunamadı.', 'error');
+        return;
+      }
+      hasUnsavedChanges = false;
+      renderScheduleTable();
+      renderStatsTables();
+      renderHolidaysCalendar();
+      showToast('Son Kaydedilen Hal Geri Yüklendi! ↩️', 'Yapılan değişiklikler iptal edildi, son kayda dönüldü.', 'info');
+    }
+  }
+
+  // ================= ÇAKIŞMA TESPİT FONKSİYONLARI =================
+  // 1. Aynı satırda (aynı günde) iki veya daha fazla nöbetçi aynı kişi mi? -> YAZI KIRMIZI
+  function checkSameRowDuplicate(day, teacherName) {
+    if (!teacherName || !day || day.isClosed) return false;
+    let count = 0;
+    const activeIds = getActiveColumnIds();
+    for (let i = 0; i < activeIds.length; i++) {
+      if (day[activeIds[i]] === teacherName) count++;
+    }
+    if (day.hasEtut && day.etut === teacherName) count++;
+    return count > 1;
+  }
+
+  // 2. Arka arkaya (dün veya yarın) aynı isim nöbetçi mi? -> SARI RENK
+  function checkConsecutiveDuty(dayIndex, teacherName) {
+    if (!teacherName || !scheduleDays || scheduleDays.length === 0) return false;
+    const activeIds = getActiveColumnIds();
+
+    const hasTeacherInDay = (targetDay) => {
+      if (!targetDay || targetDay.isClosed) return false;
+      for (let i = 0; i < activeIds.length; i++) {
+        if (targetDay[activeIds[i]] === teacherName) return true;
+      }
+      if (targetDay.hasEtut && targetDay.etut === teacherName) return true;
+      return false;
+    };
+
+    // Önceki gün kontrolü (dün)
+    if (dayIndex > 0 && hasTeacherInDay(scheduleDays[dayIndex - 1])) {
+      return true;
+    }
+
+    // Sonraki gün kontrolü (yarın)
+    if (dayIndex < scheduleDays.length - 1 && hasTeacherInDay(scheduleDays[dayIndex + 1])) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function getSlotConflictDetails(dayIndex, role, teacherName) {
+    if (!teacherName) return { className: '', tooltip: 'Nöbetçi Seç' };
+    const day = scheduleDays[dayIndex];
+    if (!day || day.isClosed) return { className: '', tooltip: teacherName };
+
+    // 1. Aynı satırda iki veya daha fazla nöbetçi aynıysa -> YAZI KIRMIZI
+    if (checkSameRowDuplicate(day, teacherName)) {
+      return {
+        className: 'slot-duplicate-row',
+        tooltip: `⚠️ UYARI (YAZI KIRMIZI): ${teacherName} aynı satırda birden fazla nöbete yazıldı!`
+      };
+    }
+
+    // 2. Arka arkaya günlerde aynı isim varsa -> SARI RENK
+    if (checkConsecutiveDuty(dayIndex, teacherName)) {
+      return {
+        className: 'slot-consecutive',
+        tooltip: `ℹ️ BİLGİ (SARI RENK): ${teacherName} arka arkaya (üst üste) günlerde nöbetçi!`
+      };
+    }
+
+    return {
+      className: '',
+      tooltip: `${teacherName} (Değiştirmek için tıklayın)`
+    };
+  }
+
+  // AY DEĞİŞTİRME - VERİTABANINDAN YÜKLE YA DA YENİ OLUŞTUR
+  function switchMonth(newYear, newMonth) {
+    const expiredReadOnly = !!(window.authManager && window.authManager.isLoggedIn() && window.authManager.isExpired());
+
+    // 1. Önceki ayın çizelgesini ve sütun tercihini veritabanına mühürle (süresi dolmuşsa değişiklik yazma)
+    const oldKey = `${currentYear}_${currentMonth}`;
+    if (!expiredReadOnly) {
+      if (scheduleDays && scheduleDays.length > 0) {
+        monthlySchedules[oldKey] = scheduleDays;
+      }
+      monthlyClosedDates[oldKey] = closedDates;
+      monthlyDutyColumns[oldKey] = JSON.parse(JSON.stringify(dutyColumns));
+    }
+
+    // 2. Yeni ayı ayarla
+    currentYear = newYear;
+    currentMonth = newMonth;
+    selectYear.value = currentYear;
+    selectMonth.value = currentMonth;
+
+    applySettingsToUI();
+
+    const newKey = `${currentYear}_${currentMonth}`;
+    if (monthlyDutyColumns[newKey]) {
+      dutyColumns = window.dutyScheduler.normalizeDutyColumns(monthlyDutyColumns[newKey]);
+    } else if (!expiredReadOnly) {
+      monthlyDutyColumns[newKey] = JSON.parse(JSON.stringify(dutyColumns));
+    }
+    updateColumnsCountBadge();
+
+    // 3. Veritabanında kayıtlı çizelge var mı?
+    if (monthlySchedules[newKey] && monthlySchedules[newKey].length > 0) {
+      // KAYITLI LİSTE VAR -> ASLA YENİDEN DAĞITMA, KAYITLI LİSTEYİ YÜKLE
+      scheduleDays = migrateScheduleDaysList(monthlySchedules[newKey]);
+      closedDates = monthlyClosedDates[newKey] || {};
+      renderScheduleTable();
+      renderStatsTables();
+      renderHolidaysCalendar();
+    } else if (expiredReadOnly || teachers.length === 0) {
+      // Süresi dolmuş kullanıcı veya henüz öğretmeni olmayan yeni kullanıcı -> boş çizelge göster
+      closedDates = monthlyClosedDates[newKey] || {};
+      scheduleDays = window.dutyScheduler.generateMonthDays(currentYear, currentMonth, closedDates);
+      renderScheduleTable();
+      renderStatsTables();
+      renderHolidaysCalendar();
+    } else {
+      // YENİ AY -> İlk kez açılıyorsa varsayılan kapalı günleri yükle ve oluştur
+      closedDates = monthlyClosedDates[newKey] || {};
+      monthlyClosedDates[newKey] = closedDates;
+      runDistribution();
+      renderHolidaysCalendar();
+    }
+  }
+
+  // UYGULAMA İLK BAŞLATMA (Kullanıcı verisi giriş doğrulandıktan sonra izole olarak yüklenir)
+  function initApp() {
+    resetInMemoryWorkspaceState(false);
+    applySettingsToUI();
+    setupEventHandlers();
+  }
+
+  // AYARLARI ARAYÜZE UYGULA
+  function applySettingsToUI() {
+    dispInstTop.textContent = settings.instTop;
+    dispInstMid.textContent = settings.instMid;
+    dispSchoolName.textContent = settings.schoolName;
+    dispApprovalDate.innerHTML = settings.approvalDate.replace(/\n/g, '<br>');
+    dispVicePrincipal.textContent = settings.vicePrincipal;
+    dispViceTitle.textContent = settings.viceTitle;
+    dispPrincipal.textContent = settings.principal;
+    dispPrincipalTitle.textContent = settings.principalTitle;
+
+    // Başlık metni
+    const mName = window.dutyScheduler.monthNames[currentMonth].toUpperCase();
+    dispRosterTitle.textContent = `${currentYear} YILI ${mName} AYI BELLETMEN ÖĞRETMEN NÖBET ÇİZELGESİ`;
+
+    // Form inputs
+    settingInstTop.value = settings.instTop;
+    settingInstMid.value = settings.instMid;
+    settingSchoolName.value = settings.schoolName;
+    if (settingDistrict) settingDistrict.value = settings.district || '';
+    if (settingNobetHours) settingNobetHours.value = settings.nobetHours || 8;
+    if (settingEtutHours) settingEtutHours.value = settings.etutHours || 4;
+    settingApprovalDate.value = settings.approvalDate;
+    settingVicePrincipal.value = settings.vicePrincipal;
+    settingViceTitle.value = settings.viceTitle;
+    settingPrincipal.value = settings.principal;
+    settingPrincipalTitle.value = settings.principalTitle;
+  }
+
+  // OTOMATİK DAĞITIM MOTORUNU ÇALIŞTIR
+  function runDistribution(options = {}) {
+    const activeCols = window.dutyScheduler.normalizeDutyColumns(options.dutyColumns || dutyColumns);
+    dutyColumns = activeCols;
+    const mKey = `${currentYear}_${currentMonth}`;
+    monthlyDutyColumns[mKey] = JSON.parse(JSON.stringify(dutyColumns));
+
+    let monthDays = window.dutyScheduler.generateMonthDays(currentYear, currentMonth, closedDates);
+
+    // Eğer mevcut scheduleDays varsa, kilitli olan nöbetçileri yeni takvime aktar
+    if (scheduleDays && scheduleDays.length === monthDays.length) {
+      monthDays = monthDays.map((d, i) => {
+        const cur = window.dutyScheduler.migrateDayObject(scheduleDays[i]);
+        if (cur && cur.locked) {
+          const next = {
+            ...d,
+            locked: {
+              kiz1: !!cur.locked.kiz1,
+              kiz2: !!cur.locked.kiz2,
+              kiz3: !!cur.locked.kiz3,
+              erkek1: !!cur.locked.erkek1,
+              erkek2: !!cur.locked.erkek2,
+              erkek3: !!cur.locked.erkek3,
+              etut: !!cur.locked.etut
+            },
+            kiz1: cur.locked.kiz1 ? cur.kiz1 : null,
+            kiz2: cur.locked.kiz2 ? cur.kiz2 : null,
+            kiz3: cur.locked.kiz3 ? cur.kiz3 : null,
+            erkek1: cur.locked.erkek1 ? cur.erkek1 : null,
+            erkek2: cur.locked.erkek2 ? cur.erkek2 : null,
+            erkek3: cur.locked.erkek3 ? cur.erkek3 : null,
+            etut: cur.locked.etut ? cur.etut : (cur.etut || null)
+          };
+          return next;
+        }
+        return d;
+      });
+    }
+
+    const result = window.dutyScheduler.distributeDuties(monthDays, teachers, {
+      balanceWeekends: true,
+      avoidConsecutive: true,
+      enableEtut: false, // Kullanıcı isteği: Etüt nöbetinin otomatik dağıtımı kapalıdır
+      ...options,
+      dutyColumns: activeCols
+    });
+
+    scheduleDays = result.days;
+    renderScheduleTable();
+    renderStatsTables();
+    markAsUnsaved();
+  }
+
+  // NÖBET ÇİZELGESİ TABLOSUNU ÇİZ (Dinamik Kız 0..3 + Erkek 0..3 = Toplam 1..6 Belletici Sütunu)
+  function renderScheduleTable() {
+    dutyColumns = window.dutyScheduler.normalizeDutyColumns(dutyColumns);
+    updateColumnsCountBadge();
+
+    if (rosterTable) {
+      rosterTable.classList.toggle('cols-dense', dutyColumns.length >= 4);
+    }
+
+    // Dinamik Başlık Satırı (thead)
+    if (rosterThead) {
+      const colWidths = { 1: '420px', 2: '280px', 3: '215px', 4: '165px', 5: '138px', 6: '122px' };
+      const colWidth = colWidths[dutyColumns.length] || '150px';
+      const dateWidth = dutyColumns.length >= 4 ? '76px' : '90px';
+      const dayWidth = dutyColumns.length >= 4 ? '88px' : '110px';
+      const etutWidth = dutyColumns.length >= 4 ? '130px' : '200px';
+      const sigWidth = dutyColumns.length >= 4 ? '72px' : '100px';
+
+      const dynamicHeaders = dutyColumns.map(col => {
+        const meta = getColumnStyleMeta(col.gender);
+        return `<th style="width: ${colWidth};" class="${meta.thClass}">${escapeHtml(col.title)}</th>`;
+      }).join('');
+
+      rosterThead.innerHTML = `
+        <tr>
+          <th style="width: ${dateWidth};">TARİH</th>
+          <th style="width: ${dayWidth};">GÜN</th>
+          ${dynamicHeaders}
+          <th style="width: ${etutWidth};" class="col-etut">ETÜT NÖBETİ</th>
+          <th style="width: ${sigWidth};" class="col-signature">İMZA</th>
+        </tr>
+      `;
+    }
+
+    rosterTbody.innerHTML = '';
+    let activeDays = 0;
+    let closedDays = 0;
+
+    scheduleDays.forEach((rawDay, index) => {
+      const day = window.dutyScheduler.migrateDayObject(rawDay);
+      scheduleDays[index] = day;
+
+      const tr = document.createElement('tr');
+      if (day.isWeekend) tr.classList.add('tr-weekend');
+      if (day.isClosed) tr.classList.add('tr-closed');
+
+      // Tarih gösterimi (DD.MM.YYYY)
+      const dateParts = day.dateKey.split('-');
+      const formattedDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
+
+      if (day.isClosed) {
+        closedDays++;
+        const closedColspan = dutyColumns.length + 1;
+        tr.innerHTML = `
+          <td><strong>${formattedDate}</strong></td>
+          <td><strong>${day.dayName}</strong></td>
+          <td colspan="${closedColspan}" class="closed-cell-banner" data-closed-banner="true">
+            🏖️ ${day.closedReason || 'YURT KAPALI / TATİL'}
+          </td>
+          <td style="color: #94a3b8; font-size: 0.75rem;">-</td>
+        `;
+      } else {
+        activeDays++;
+        const locked = day.locked || {};
+        const dynamicCells = dutyColumns.map(col => {
+          const meta = getColumnStyleMeta(col.gender);
+          return `<td>${renderSlotButton(day[col.id], index, col.id, meta.slotClass, !!locked[col.id])}</td>`;
+        }).join('');
+
+        tr.innerHTML = `
+          <td>${formattedDate}</td>
+          <td>${day.dayName}</td>
+          ${dynamicCells}
+          <td class="col-etut">${day.hasEtut ? renderSlotButton(day.etut, index, 'etut', 'slot-etut', !!locked.etut) : '<span style="color:#94a3b8; font-size: 0.75rem;">Etüt Yok</span>'}</td>
+          <td style="border-bottom: 1px dotted #94a3b8;"></td>
+        `;
+      }
+
+      rosterTbody.appendChild(tr);
+    });
+
+    activeDaysCountEl.textContent = `${activeDays} Gün`;
+    closedDaysCountEl.textContent = `${closedDays} Gün`;
+
+    // Slot öğretmen ismi butonuna tıklama dinleyicileri
+    rosterTbody.querySelectorAll('.teacher-slot-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const dayIdx = parseInt(e.currentTarget.dataset.dayIndex, 10);
+        const role = e.currentTarget.dataset.role;
+        openSlotEditModal(dayIdx, role);
+      });
+    });
+
+    // Kilit Aç/Kapa butonlarına tıklama dinleyicileri
+    rosterTbody.querySelectorAll('.btn-lock-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dayIdx = parseInt(e.currentTarget.dataset.dayIndex, 10);
+        const role = e.currentTarget.dataset.role;
+        toggleSlotLock(dayIdx, role);
+      });
+    });
+
+    syncViewToggles();
+    renderPuantajTables();
+  }
+
+  function renderSlotButton(teacherName, dayIndex, role, typeClass, isLocked = false) {
+    if (!teacherName) {
+      return `
+        <div class="slot-container">
+          <button class="teacher-slot-btn slot-empty" data-day-index="${dayIndex}" data-role="${role}" title="Nöbetçi Ata">+ Nöbetçi Seç</button>
+        </div>`;
+    }
+    const lockIcon = isLocked ? '🔒' : '🔓';
+    const lockTitle = isLocked ? 'Kilitli (Otomatik dağıtımda yerinde sabit kalır). Kilidi açmak için tıklayın.' : 'Kilitle (Otomatik dağıtımda yerinde sabit kalsın).';
+    const lockedClass = isLocked ? 'is-locked' : '';
+
+    const conflict = getSlotConflictDetails(dayIndex, role, teacherName);
+    const finalClass = conflict.className ? `${typeClass} ${conflict.className}` : typeClass;
+
+    return `
+      <div class="slot-container ${lockedClass}">
+        <button class="teacher-slot-btn ${finalClass}" data-day-index="${dayIndex}" data-role="${role}" title="${conflict.tooltip}">
+          ${isLocked ? '<span class="lock-indicator">🔒</span>' : ''}${teacherName}
+        </button>
+        <button type="button" class="btn-lock-toggle ${isLocked ? 'active' : ''}" data-day-index="${dayIndex}" data-role="${role}" title="${lockTitle}">
+          ${lockIcon}
+        </button>
+      </div>`;
+  }
+
+  function toggleSlotLock(dayIndex, role) {
+    if (!ensureNotExpiredOrAlert()) return;
+    const day = scheduleDays[dayIndex];
+    if (!day || !day[role]) return;
+    if (!day.locked) day.locked = {};
+    day.locked[role] = !day.locked[role];
+    renderScheduleTable();
+    markAsUnsaved();
+  }
+
+  // İSTATİSTİK TABLOLARINI ÇİZ (Kız ve Erkek)
+  function renderStatsTables() {
+    const stats = window.dutyScheduler.calculateRosterStats(scheduleDays, teachers, dutyColumns);
+
+    // KIZ PANSİYONU İSTATİSTİKLERİ
+    femaleStatsTbody.innerHTML = '';
+    const femaleTeachers = teachers.filter(t => t.gender === 'K');
+    let fTotalWeekday = 0, fTotalWeekend = 0, fGrandTotal = 0;
+
+    femaleTeachers.forEach((t, idx) => {
+      const s = stats[t.name] || { weekday: 0, weekend: 0, totalDuties: 0 };
+      fTotalWeekday += s.weekday;
+      fTotalWeekend += s.weekend;
+      fGrandTotal += s.totalDuties;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td>${t.name} ${!t.active || t.exempt ? '<span style="color:#dc2626; font-size:0.7rem;">(Muaf)</span>' : ''}</td>
+        <td>${s.weekday}</td>
+        <td>${s.weekend}</td>
+        <td><strong>${s.totalDuties}</strong></td>
+      `;
+      femaleStatsTbody.appendChild(tr);
+    });
+
+    // Kız Toplam Satırı
+    const fFoot = document.createElement('tr');
+    fFoot.style.fontWeight = 'bold';
+    fFoot.style.background = '#fdf2f8';
+    fFoot.innerHTML = `
+      <td colspan="2" style="text-align: right;">TOPLAM:</td>
+      <td>${fTotalWeekday}</td>
+      <td>${fTotalWeekend}</td>
+      <td>${fGrandTotal}</td>
+    `;
+    femaleStatsTbody.appendChild(fFoot);
+
+    // ERKEK PANSİYONU İSTATİSTİKLERİ
+    maleStatsTbody.innerHTML = '';
+    const maleTeachers = teachers.filter(t => t.gender === 'E');
+    let mTotalWeekday = 0, mTotalWeekend = 0, mTotalEtut = 0, mGrandTotal = 0, mGrandPoints = 0;
+
+    maleTeachers.forEach((t, idx) => {
+      const s = stats[t.name] || { weekday: 0, weekend: 0, etut: 0, totalDuties: 0, totalPoints: 0 };
+      mTotalWeekday += s.weekday;
+      mTotalWeekend += s.weekend;
+      mTotalEtut += s.etut;
+      mGrandTotal += s.totalDuties;
+      mGrandPoints += s.totalPoints;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td>${t.name} ${!t.active || t.exempt ? '<span style="color:#dc2626; font-size:0.7rem;">(Muaf)</span>' : ''}</td>
+        <td>${s.weekday}</td>
+        <td>${s.weekend}</td>
+        <td>${s.etut}</td>
+        <td><strong>${s.totalDuties}</strong></td>
+        <td style="color: #1e40af; font-weight: 700;">${s.totalPoints}</td>
+      `;
+      maleStatsTbody.appendChild(tr);
+    });
+
+    // Erkek Toplam Satırı
+    const mFoot = document.createElement('tr');
+    mFoot.style.fontWeight = 'bold';
+    mFoot.style.background = '#f0f9ff';
+    mFoot.innerHTML = `
+      <td colspan="2" style="text-align: right;">TOPLAM:</td>
+      <td>${mTotalWeekday}</td>
+      <td>${mTotalWeekend}</td>
+      <td>${mTotalEtut}</td>
+      <td>${mGrandTotal}</td>
+      <td style="color: #1e40af; font-weight: 700;">${mGrandPoints}</td>
+    `;
+    maleStatsTbody.appendChild(mFoot);
+  }
+
+  // ================= MANUEL SLOT EDİT (ÖĞRETMEN DEĞİŞTİRME) =================
+  function openSlotEditModal(dayIndex, role) {
+    if (!ensureNotExpiredOrAlert()) return;
+    editingSlot = { dayIndex, role };
+    const day = scheduleDays[dayIndex];
+    const currentName = day[role] || 'Atanmamış (Boş)';
+    const colDef = dutyColumns.find(c => c.id === role);
+
+    const roleTitle = role === 'etut'
+      ? 'Etüt Nöbetçisi'
+      : (colDef ? colDef.title : 'Nöbetçi Belletmen');
+
+    const dateParts = day.dateKey.split('-');
+    slotInfoDate.textContent = `Tarih: ${dateParts[2]}.${dateParts[1]}.${dateParts[0]} ${day.dayName}`;
+    slotInfoRole.textContent = `Görev: ${roleTitle}`;
+    slotCurrentTeacher.textContent = currentName;
+
+    // İlgili sütunun cinsiyet/grup tercihine uygun adayları hazırla
+    candidateTeachersList.innerHTML = '';
+    let candidates = [];
+    if (role === 'etut') {
+      candidates = teachers.filter(t => t.gender === 'E');
+    } else if (colDef && colDef.gender === 'K') {
+      candidates = teachers.filter(t => t.gender === 'K');
+    } else if (colDef && colDef.gender === 'E') {
+      candidates = teachers.filter(t => t.gender === 'E');
+    } else {
+      candidates = [...teachers];
+    }
+
+    if (slotCandidateSearch) {
+      slotCandidateSearch.value = '';
+      slotCandidateSearch.oninput = (e) => {
+        const query = (e.target.value || '').toLocaleLowerCase('tr').trim();
+        const items = candidateTeachersList.querySelectorAll('.candidate-item-btn');
+        items.forEach(it => {
+          const nameEl = it.querySelector('strong');
+          const nameText = nameEl ? nameEl.textContent.toLocaleLowerCase('tr') : '';
+          it.style.display = nameText.includes(query) ? 'flex' : 'none';
+        });
+      };
+    }
+
+    const stats = window.dutyScheduler.calculateRosterStats(scheduleDays, teachers, dutyColumns);
+    const activeIds = getActiveColumnIds();
+
+    candidates.forEach(t => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'candidate-item-btn';
+      if (t.name === day[role]) btn.classList.add('selected');
+
+      const tStat = stats[t.name] || { totalDuties: 0, weekend: 0, etut: 0 };
+      
+      // Uygunluk kontrolleri
+      let conflictWarning = '';
+      let isAlreadyInSameDay = false;
+      for (let i = 0; i < activeIds.length; i++) {
+        const cid = activeIds[i];
+        if (cid !== role && day[cid] === t.name) {
+          isAlreadyInSameDay = true;
+          break;
+        }
+      }
+      if (!isAlreadyInSameDay && role !== 'etut' && day.hasEtut && day.etut === t.name) {
+        isAlreadyInSameDay = true;
+      }
+
+      const isConsecutive = checkConsecutiveDuty(dayIndex, t.name);
+
+      if (!t.active || t.exempt) {
+        conflictWarning = '❌ (Muaf/Pasif)';
+      } else if (t.blockedDates && t.blockedDates.includes(day.dateKey)) {
+        conflictWarning = '⚠️ (İzinli Gün)';
+      } else if (t.blockedDays && t.blockedDays.includes(day.dayOfWeek)) {
+        conflictWarning = '⚠️ (Kapalı Gün)';
+      } else if (isAlreadyInSameDay) {
+        conflictWarning = '🔴 (Aynı Satırda Nöbetçi - Yazı Kırmızı Olur)';
+        btn.classList.add('warning-duplicate-row');
+      } else if (isConsecutive) {
+        conflictWarning = '🟡 (Arka Arkaya Gün Nöbeti - Sarı Renk Olur)';
+        btn.classList.add('warning-consecutive');
+      }
+
+      const warningColor = isAlreadyInSameDay ? '#dc2626' : (isConsecutive ? '#854d0e' : '#dc2626');
+      const genderTag = (colDef && colDef.gender === 'A')
+        ? `<span style="color:#64748b; font-size:0.72rem; margin-left:4px;">(${t.gender === 'K' ? 'Kız' : 'Erkek'})</span>`
+        : '';
+
+      btn.innerHTML = `
+        <div>
+          <strong>${t.name}</strong>${genderTag}
+          <span style="color:${warningColor}; font-size:0.75rem; font-weight:600; margin-left:6px;">${conflictWarning}</span>
+        </div>
+        <div class="candidate-stats-badge">
+          Toplam: <strong>${tStat.totalDuties}</strong> | H.Sonu: <strong>${tStat.weekend}</strong> ${t.gender === 'E' ? `| Etüt: <strong>${tStat.etut}</strong>` : ''}
+        </div>
+      `;
+
+      btn.addEventListener('click', () => {
+        applyTeacherToSlot(dayIndex, role, t.name);
+        closeSlotEditModal();
+      });
+
+      candidateTeachersList.appendChild(btn);
+    });
+
+    const slotEditLock = document.getElementById('slot-edit-lock');
+    if (slotEditLock) {
+      slotEditLock.checked = !!(day.locked && day.locked[role]);
+    }
+
+    modalSlotEdit.classList.add('active');
+  }
+
+  function applyTeacherToSlot(dayIndex, role, newTeacherName, forceLock) {
+    if (!ensureNotExpiredOrAlert()) return;
+    const day = scheduleDays[dayIndex];
+    if (!day.locked) day.locked = {};
+    day[role] = newTeacherName;
+
+    if (forceLock !== undefined) {
+      day.locked[role] = forceLock;
+    } else if (newTeacherName) {
+      const slotEditLock = document.getElementById('slot-edit-lock');
+      // Kullanıcı kilit kutucuğunu işaretlediyse kilitli kalsın
+      day.locked[role] = slotEditLock ? slotEditLock.checked : true;
+    } else {
+      day.locked[role] = false;
+    }
+
+    renderScheduleTable();
+    renderStatsTables();
+    markAsUnsaved();
+  }
+
+  function closeSlotEditModal() {
+    modalSlotEdit.classList.remove('active');
+    editingSlot = null;
+  }
+
+  btnSlotClear.addEventListener('click', () => {
+    if (editingSlot) {
+      applyTeacherToSlot(editingSlot.dayIndex, editingSlot.role, null, false);
+      closeSlotEditModal();
+    }
+  });
+
+  btnSlotModalClose.addEventListener('click', closeSlotEditModal);
+  btnSlotCancel.addEventListener('click', closeSlotEditModal);
+
+  // ================= DAĞITIM SİHİRBAZI (WIZARD) =================
+  function loadWizardColumnsForSelectedMonth() {
+    const y = parseInt(wInputYear.value, 10) || currentYear;
+    const m = parseInt(wSelectMonth.value, 10);
+    const mKey = `${y}_${m}`;
+    const sourceCols = (monthlyDutyColumns && monthlyDutyColumns[mKey]) || dutyColumns;
+    wizardDutyColumns = window.dutyScheduler.normalizeDutyColumns(JSON.parse(JSON.stringify(sourceCols)));
+    renderColumnsConfigEditor({
+      femalePicker: wFemaleCountPicker,
+      malePicker: wMaleCountPicker,
+      totalBadge: wColumnsTotalBadge,
+      listEl: wColumnsConfigList,
+      getCols: () => wizardDutyColumns,
+      setCols: (next) => { wizardDutyColumns = next; }
+    });
+  }
+
+  function openWizard() {
+    if (!ensureScheduleRightCheck()) return;
+    currentWizardStep = 1;
+    wSelectMonth.value = currentMonth;
+    wInputYear.value = currentYear;
+    loadWizardColumnsForSelectedMonth();
+    updateWizardStepUI();
+    renderWizardMonthDaysCount();
+    renderWizardCalendar();
+    renderWizardTeacherConstraints();
+    modalWizard.classList.add('active');
+  }
+
+  function closeWizard() {
+    modalWizard.classList.remove('active');
+  }
+
+  function updateWizardStepUI() {
+    wizardSteps.forEach((s, idx) => {
+      s.classList.toggle('active', idx + 1 === currentWizardStep);
+    });
+
+    stepBubbles.forEach((b, idx) => {
+      const stepNum = idx + 1;
+      b.classList.toggle('active', stepNum === currentWizardStep);
+      b.classList.toggle('completed', stepNum < currentWizardStep);
+    });
+
+    wBtnPrev.disabled = currentWizardStep === 1;
+    if (currentWizardStep === 4) {
+      wBtnNext.style.display = 'none';
+      wBtnFinish.style.display = 'inline-flex';
+    } else {
+      wBtnNext.style.display = 'inline-flex';
+      wBtnFinish.style.display = 'none';
+    }
+
+    // Adım içeriğini yenile
+    if (currentWizardStep === 2) {
+      renderWizardCalendar();
+    } else if (currentWizardStep === 3) {
+      loadTeacherConstraintForm();
+      renderConstraintsList();
+    }
+
+    // Modal pencere içeriğini en yukarı kaydır
+    const modalBody = modalWizard.querySelector('.modal-body');
+    if (modalBody) modalBody.scrollTop = 0;
+  }
+
+  function renderWizardMonthDaysCount() {
+    const y = parseInt(wInputYear.value, 10) || currentYear;
+    const m = parseInt(wSelectMonth.value, 10);
+    const count = window.dutyScheduler.getDaysInMonth(y, m);
+    wDispMonthDays.textContent = count;
+  }
+
+  // Wizard Takvimi
+  function renderWizardCalendar() {
+    wCalendarContainer.innerHTML = '';
+    const y = parseInt(wInputYear.value, 10) || currentYear;
+    const m = parseInt(wSelectMonth.value, 10);
+    const count = window.dutyScheduler.getDaysInMonth(y, m);
+
+    for (let d = 1; d <= count; d++) {
+      const dKey = window.dutyScheduler.formatDateKey(y, m, d);
+      const dateObj = new Date(y, m, d);
+      const dayOfWeek = dateObj.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const isClosed = !!closedDates[dKey];
+
+      const div = document.createElement('div');
+      div.className = 'w-cal-day';
+      if (isWeekend) div.classList.add('weekend');
+      if (isClosed) div.classList.add('closed');
+
+      div.innerHTML = `
+        <div style="font-weight:700; font-size:1rem;">${d}</div>
+        <div style="font-size:0.7rem;">${window.dutyScheduler.turkishDays[dayOfWeek].substring(0, 3)}</div>
+        <div style="font-size:0.65rem; margin-top:2px;">${isClosed ? 'KAPALI' : 'AÇIK'}</div>
+      `;
+
+      div.addEventListener('click', () => {
+        if (closedDates[dKey]) {
+          delete closedDates[dKey];
+        } else {
+          closedDates[dKey] = 'YURT KAPALI';
+        }
+        renderWizardCalendar();
+        renderHolidaysCalendar();
+        saveToLocalStorage();
+      });
+
+      wCalendarContainer.appendChild(div);
+    }
+  }
+
+  // Wizard Öğretmen Kısıtlamaları
+  function renderWizardTeacherConstraints() {
+    wSelectTeacher.innerHTML = '';
+    teachers.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = `${t.name} (${t.gender === 'K' ? 'Kız' : 'Erkek'})`;
+      wSelectTeacher.appendChild(opt);
+    });
+
+    loadTeacherConstraintForm();
+    renderConstraintsList();
+  }
+
+  function loadTeacherConstraintForm() {
+    const tId = wSelectTeacher.value;
+    const teacher = teachers.find(t => t.id === tId);
+    if (!teacher) return;
+
+    wTeacherExempt.checked = teacher.exempt || false;
+
+    // Günler
+    wDayBlocks.forEach(cb => {
+      const val = parseInt(cb.value, 10);
+      cb.checked = teacher.blockedDays && teacher.blockedDays.includes(val);
+    });
+
+    // Ayın günleri butonları
+    wTeacherDatesGrid.innerHTML = '';
+    const y = parseInt(wInputYear.value, 10) || currentYear;
+    const m = parseInt(wSelectMonth.value, 10);
+    const count = window.dutyScheduler.getDaysInMonth(y, m);
+
+    for (let d = 1; d <= count; d++) {
+      const dKey = window.dutyScheduler.formatDateKey(y, m, d);
+      const isBlocked = teacher.blockedDates && teacher.blockedDates.includes(dKey);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'date-pill-btn';
+      if (isBlocked) btn.classList.add('blocked');
+      btn.textContent = `${d}`;
+
+      btn.addEventListener('click', () => {
+        if (!teacher.blockedDates) teacher.blockedDates = [];
+        if (teacher.blockedDates.includes(dKey)) {
+          teacher.blockedDates = teacher.blockedDates.filter(k => k !== dKey);
+          btn.classList.remove('blocked');
+        } else {
+          teacher.blockedDates.push(dKey);
+          btn.classList.add('blocked');
+        }
+      });
+
+      wTeacherDatesGrid.appendChild(btn);
+    }
+  }
+
+  wSelectTeacher.addEventListener('change', loadTeacherConstraintForm);
+
+  wBtnSaveConstraint.addEventListener('click', () => {
+    const tId = wSelectTeacher.value;
+    const teacher = teachers.find(t => t.id === tId);
+    if (!teacher) return;
+
+    teacher.exempt = wTeacherExempt.checked;
+    teacher.blockedDays = [];
+    wDayBlocks.forEach(cb => {
+      if (cb.checked) teacher.blockedDays.push(parseInt(cb.value, 10));
+    });
+
+    saveToLocalStorage();
+    renderConstraintsList();
+    renderTeachersList();
+    alert(`${teacher.name} için kısıtlamalar kaydedildi!`);
+  });
+
+  function renderConstraintsList() {
+    wActiveConstraintsList.innerHTML = '';
+    const constrainedTeachers = teachers.filter(t => t.exempt || (t.blockedDates && t.blockedDates.length > 0) || (t.blockedDays && t.blockedDays.length > 0));
+
+    if (constrainedTeachers.length === 0) {
+      wActiveConstraintsList.innerHTML = '<div style="color:#94a3b8; font-size:0.8rem; font-style:italic;">Henüz kısıtlama eklenmiş öğretmen yok.</div>';
+      return;
+    }
+
+    constrainedTeachers.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'constraint-tag-card';
+
+      let details = [];
+      if (t.exempt) details.push('Muaf');
+      if (t.blockedDays && t.blockedDays.length > 0) {
+        const dayNames = t.blockedDays.map(d => window.dutyScheduler.turkishDays[d].substring(0, 3)).join(', ');
+        details.push(`Gün: ${dayNames}`);
+      }
+      if (t.blockedDates && t.blockedDates.length > 0) {
+        details.push(`${t.blockedDates.length} Tarih`);
+      }
+
+      card.innerHTML = `
+        <div><strong>${t.name}</strong> <span style="color:#64748b;">(${details.join(' | ')})</span></div>
+        <button type="button" class="btn btn-outline-danger btn-sm" style="padding:2px 6px; font-size:0.7rem;">Kaldır</button>
+      `;
+
+      card.querySelector('button').addEventListener('click', () => {
+        t.exempt = false;
+        t.blockedDays = [];
+        t.blockedDates = [];
+        saveToLocalStorage();
+        loadTeacherConstraintForm();
+        renderConstraintsList();
+        renderTeachersList();
+      });
+
+      wActiveConstraintsList.appendChild(card);
+    });
+  }
+
+  // Wizard Hızlı Ara Tatil Kapatma
+  wBtnAratatil.addEventListener('click', () => {
+    const y = parseInt(wInputYear.value, 10) || currentYear;
+    const m = parseInt(wSelectMonth.value, 10);
+    for (let d = 14; d <= 22; d++) {
+      const dKey = window.dutyScheduler.formatDateKey(y, m, d);
+      closedDates[dKey] = 'ARA TATİL';
+    }
+    renderWizardCalendar();
+    renderHolidaysCalendar();
+    saveToLocalStorage();
+  });
+
+  const wBtnWeekendsClose = document.getElementById('w-btn-weekends-close');
+  if (wBtnWeekendsClose) {
+    wBtnWeekendsClose.addEventListener('click', () => {
+      const y = parseInt(wInputYear.value, 10) || currentYear;
+      const m = parseInt(wSelectMonth.value, 10);
+      const count = window.dutyScheduler.getDaysInMonth(y, m);
+      for (let d = 1; d <= count; d++) {
+        const dateObj = new Date(y, m, d);
+        const dayOfWeek = dateObj.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) { // Cmt & Paz
+          const dKey = window.dutyScheduler.formatDateKey(y, m, d);
+          closedDates[dKey] = 'HAFTA SONU KAPALI';
+        }
+      }
+      renderWizardCalendar();
+      renderHolidaysCalendar();
+      saveToLocalStorage();
+    });
+  }
+
+  const wBtnMonthClose = document.getElementById('w-btn-month-close');
+  if (wBtnMonthClose) {
+    wBtnMonthClose.addEventListener('click', () => {
+      const y = parseInt(wInputYear.value, 10) || currentYear;
+      const m = parseInt(wSelectMonth.value, 10);
+      const count = window.dutyScheduler.getDaysInMonth(y, m);
+      for (let d = 1; d <= count; d++) {
+        const dKey = window.dutyScheduler.formatDateKey(y, m, d);
+        closedDates[dKey] = 'YURT KAPALI';
+      }
+      renderWizardCalendar();
+      renderHolidaysCalendar();
+      saveToLocalStorage();
+    });
+  }
+
+  wBtnOpenAll.addEventListener('click', () => {
+    closedDates = {};
+    renderWizardCalendar();
+    renderHolidaysCalendar();
+    saveToLocalStorage();
+  });
+
+  // Adım Göstergelerine Tıklayarak Doğrudan Geçiş
+  stepBubbles.forEach(bubble => {
+    bubble.addEventListener('click', () => {
+      const stepNum = parseInt(bubble.dataset.step, 10);
+      if (stepNum && stepNum >= 1 && stepNum <= 4) {
+        currentWizardStep = stepNum;
+        updateWizardStepUI();
+      }
+    });
+  });
+
+  // Adım İçi Hızlı İlerle Butonları
+  const wStep1NextInline = document.getElementById('w-step1-next-inline');
+  if (wStep1NextInline) {
+    wStep1NextInline.addEventListener('click', () => {
+      currentWizardStep = 2;
+      updateWizardStepUI();
+    });
+  }
+
+  const wStep2NextInline = document.getElementById('w-step2-next-inline');
+  if (wStep2NextInline) {
+    wStep2NextInline.addEventListener('click', () => {
+      currentWizardStep = 3;
+      updateWizardStepUI();
+    });
+  }
+
+  // Wizard İleri / Geri / Bitir
+  wBtnNext.addEventListener('click', () => {
+    if (currentWizardStep < 4) {
+      currentWizardStep++;
+      updateWizardStepUI();
+    }
+  });
+
+  wBtnPrev.addEventListener('click', () => {
+    if (currentWizardStep > 1) {
+      currentWizardStep--;
+      updateWizardStepUI();
+    }
+  });
+
+  wBtnFinish.addEventListener('click', async () => {
+    const rightRes = await consumeScheduleRightOrAlert();
+    if (!rightRes) return;
+
+    const prevKey = `${currentYear}_${currentMonth}`;
+    if (scheduleDays && scheduleDays.length > 0) {
+      monthlySchedules[prevKey] = JSON.parse(JSON.stringify(scheduleDays));
+    }
+    monthlyClosedDates[prevKey] = JSON.parse(JSON.stringify(closedDates));
+    monthlyDutyColumns[prevKey] = JSON.parse(JSON.stringify(dutyColumns));
+
+    currentYear = parseInt(wInputYear.value, 10);
+    currentMonth = parseInt(wSelectMonth.value, 10);
+    selectYear.value = currentYear;
+    selectMonth.value = currentMonth;
+
+    const mKey = `${currentYear}_${currentMonth}`;
+    if (mKey !== prevKey) {
+      scheduleDays = (monthlySchedules[mKey] && monthlySchedules[mKey].length > 0)
+        ? migrateScheduleDaysList(JSON.parse(JSON.stringify(monthlySchedules[mKey])))
+        : [];
+    }
+
+    // Kullanıcının tercih ettiği Kız (0..3) + Erkek (0..3) = toplam 1..6 belletici sütununu uygula
+    dutyColumns = window.dutyScheduler.normalizeDutyColumns(wizardDutyColumns);
+    monthlyDutyColumns[mKey] = JSON.parse(JSON.stringify(dutyColumns));
+
+    applySettingsToUI();
+    runDistribution({
+      balanceWeekends: document.getElementById('w-rule-weekend').checked,
+      avoidConsecutive: document.getElementById('w-rule-consecutive').checked,
+      enableEtut: document.getElementById('w-rule-etut').checked,
+      dutyColumns: dutyColumns
+    });
+
+    closeWizard();
+    // 1. Sekmeye geç
+    switchTab('tab-schedule');
+    const remNote = (!rightRes.unlimited && typeof rightRes.remaining === 'number')
+      ? `\n(Kalan Yeni Nöbet Hazırlama Hakkınız: ${rightRes.remaining} / ${rightRes.limit})`
+      : '';
+    alert(`🎉 ${window.dutyScheduler.monthNames[currentMonth]} ${currentYear} (${dutyColumns.length} Belletici Sütunu) Nöbet Dağıtımı Başarıyla Tamamlandı!${remNote}`);
+  });
+
+  btnOpenWizard.addEventListener('click', openWizard);
+  btnWizardClose.addEventListener('click', closeWizard);
+  wSelectMonth.addEventListener('change', () => {
+    loadWizardColumnsForSelectedMonth();
+    renderWizardMonthDaysCount();
+    renderWizardCalendar();
+    loadTeacherConstraintForm();
+  });
+  wInputYear.addEventListener('input', () => {
+    loadWizardColumnsForSelectedMonth();
+    renderWizardMonthDaysCount();
+    renderWizardCalendar();
+    loadTeacherConstraintForm();
+  });
+
+  // ================= SÜTUN YAPILANDIRMA MODALI (TOOLBAR) =================
+  function openColumnsModal() {
+    if (!ensureNotExpiredOrAlert()) return;
+    modalDutyColumns = window.dutyScheduler.normalizeDutyColumns(JSON.parse(JSON.stringify(dutyColumns)));
+    renderColumnsConfigEditor({
+      femalePicker: mFemaleCountPicker,
+      malePicker: mMaleCountPicker,
+      totalBadge: mColumnsTotalBadge,
+      listEl: mColumnsConfigList,
+      getCols: () => modalDutyColumns,
+      setCols: (next) => { modalDutyColumns = next; }
+    });
+    if (modalColumnsConfig) modalColumnsConfig.classList.add('active');
+  }
+
+  function closeColumnsModal() {
+    if (modalColumnsConfig) modalColumnsConfig.classList.remove('active');
+  }
+
+  async function applyModalColumns(redistribute) {
+    if (!ensureNotExpiredOrAlert()) return;
+    let rightRes = null;
+    if (redistribute) {
+      rightRes = await consumeScheduleRightOrAlert();
+      if (!rightRes) return;
+    }
+
+    dutyColumns = window.dutyScheduler.normalizeDutyColumns(modalDutyColumns);
+    const mKey = `${currentYear}_${currentMonth}`;
+    monthlyDutyColumns[mKey] = JSON.parse(JSON.stringify(dutyColumns));
+
+    // Kullanılmayan sütunlardaki eski atamaları temizle
+    const activeSet = new Set(getActiveColumnIds());
+    scheduleDays.forEach(day => {
+      window.dutyScheduler.ALL_SLOT_IDS.forEach(slotId => {
+        if (!activeSet.has(slotId)) {
+          day[slotId] = null;
+          if (day.locked) day.locked[slotId] = false;
+        }
+      });
+    });
+
+    closeColumnsModal();
+
+    if (redistribute) {
+      runDistribution({ dutyColumns });
+      showToast('Sütunlar Güncellendi ve Dağıtıldı', `Çizelge ${dutyColumns.length} belletici sütunu ile yeniden dağıtıldı.`, 'success');
+    } else {
+      renderScheduleTable();
+      renderStatsTables();
+      markAsUnsaved();
+      showToast('Sütun Tercihleri Uygulandı', `Çizelge ${dutyColumns.length} belletici sütunu olarak güncellendi.`, 'info');
+    }
+  }
+
+  if (btnConfigColumns) btnConfigColumns.addEventListener('click', openColumnsModal);
+  if (btnColumnsModalClose) btnColumnsModalClose.addEventListener('click', closeColumnsModal);
+  if (btnColumnsModalCancel) btnColumnsModalCancel.addEventListener('click', closeColumnsModal);
+  if (btnColumnsModalApply) btnColumnsModalApply.addEventListener('click', () => applyModalColumns(false));
+  if (btnColumnsModalApplyRedistribute) btnColumnsModalApplyRedistribute.addEventListener('click', () => applyModalColumns(true));
+
+  // ================= TAB 2: ÖĞRETMEN YÖNETİMİ =================
+  function renderTeachersList() {
+    femaleTeachersListEl.innerHTML = '';
+    maleTeachersListEl.innerHTML = '';
+
+    const female = teachers.filter(t => t.gender === 'K');
+    const male = teachers.filter(t => t.gender === 'E');
+
+    femaleCountEl.textContent = female.length;
+    maleCountEl.textContent = male.length;
+
+    if (female.length === 0) {
+      femaleTeachersListEl.innerHTML = '<div style="padding:18px; text-align:center; color:#64748b; font-size:0.84rem; font-style:italic;">Henüz Kız Pansiyonu öğretmeni eklenmedi. Yukarıdaki <strong>➕ Yeni Öğretmen Ekle</strong> veya <strong>📥 Excel\'den Kadro Yükle</strong> butonunu kullanabilirsiniz.</div>';
+    } else {
+      female.forEach(t => femaleTeachersListEl.appendChild(createTeacherCard(t)));
+    }
+
+    if (male.length === 0) {
+      maleTeachersListEl.innerHTML = '<div style="padding:18px; text-align:center; color:#64748b; font-size:0.84rem; font-style:italic;">Henüz Erkek Pansiyonu öğretmeni eklenmedi. Yukarıdaki <strong>➕ Yeni Öğretmen Ekle</strong> veya <strong>📥 Excel\'den Kadro Yükle</strong> butonunu kullanabilirsiniz.</div>';
+    } else {
+      male.forEach(t => maleTeachersListEl.appendChild(createTeacherCard(t)));
+    }
+  }
+
+  function createTeacherCard(t) {
+    const card = document.createElement('div');
+    card.className = 'teacher-card';
+    if (!t.active || t.exempt) card.classList.add('inactive');
+
+    const badges = [];
+    if (t.schoolType === 'other') {
+      badges.push(`<span class="mini-badge school-other">🏢 Başka Okul: ${escapeHtml(t.schoolName || 'Belirtilmedi')}</span>`);
+    } else {
+      badges.push('<span class="mini-badge school-own">🏫 Kendi Okulu</span>');
+    }
+    if (!t.active) badges.push('<span class="mini-badge inactive">Pasif</span>');
+    if (t.exempt) badges.push('<span class="mini-badge inactive">Muaf</span>');
+    if (t.etutEligible) badges.push('<span class="mini-badge etut">Etüt</span>');
+    if ((t.blockedDays && t.blockedDays.length > 0) || (t.blockedDates && t.blockedDates.length > 0)) {
+      badges.push('<span class="mini-badge constraint">Mazeretli</span>');
+    }
+
+    card.innerHTML = `
+      <div class="teacher-card-info">
+        <div class="teacher-card-name">${escapeHtml(t.name)}</div>
+        <div class="teacher-card-badges">${badges.join('')}</div>
+      </div>
+      <div class="teacher-card-actions">
+        <button class="btn btn-secondary btn-sm btn-edit-teacher" title="Öğretmeni ve okul bilgisini düzenle">✏️</button>
+        <button class="btn btn-secondary btn-sm btn-toggle-active" title="Aktif/Pasif">${t.active ? 'Aktif' : 'Pasif'}</button>
+        <button class="btn btn-outline-danger btn-sm btn-delete-teacher" title="Sil">🗑️</button>
+      </div>
+    `;
+
+    card.querySelector('.btn-edit-teacher').addEventListener('click', () => {
+      if (!ensureNotExpiredOrAlert()) return;
+      openTeacherModal(t);
+    });
+
+    card.querySelector('.btn-toggle-active').addEventListener('click', () => {
+      if (!ensureNotExpiredOrAlert()) return;
+      t.active = !t.active;
+      saveToLocalStorage();
+      renderTeachersList();
+      renderStatsTables();
+      renderPuantajTables();
+    });
+
+    card.querySelector('.btn-delete-teacher').addEventListener('click', () => {
+      if (!ensureNotExpiredOrAlert()) return;
+      if (confirm(`"${t.name}" isimli öğretmeni silmek istediğinize emin misiniz?`)) {
+        teachers = teachers.filter(item => item.id !== t.id);
+        saveToLocalStorage();
+        renderTeachersList();
+        renderStatsTables();
+        renderPuantajTables();
+      }
+    });
+
+    return card;
+  }
+
+  function syncTeacherSchoolFieldVisibility() {
+    const isOther = !!(teacherSchoolOther && teacherSchoolOther.checked);
+    if (teacherOtherSchoolGroup) {
+      teacherOtherSchoolGroup.style.display = isOther ? 'block' : 'none';
+    }
+    if (teacherInputSchoolName) {
+      teacherInputSchoolName.required = isOther;
+      if (!isOther) teacherInputSchoolName.value = '';
+    }
+  }
+
+  function openTeacherModal(teacherToEdit = null) {
+    const isEdit = !!teacherToEdit;
+    if (teacherModalTitle) {
+      teacherModalTitle.textContent = isEdit ? '✏️ Öğretmen Bilgilerini Düzenle' : '➕ Yeni Öğretmen Ekle';
+    }
+    if (teacherInputId) teacherInputId.value = isEdit ? teacherToEdit.id : '';
+    teacherInputName.value = isEdit ? teacherToEdit.name : '';
+    teacherInputGender.value = isEdit ? teacherToEdit.gender : 'E';
+    teacherInputEtut.checked = isEdit ? !!teacherToEdit.etutEligible : false;
+    teacherInputActive.checked = isEdit ? teacherToEdit.active !== false : true;
+
+    const isOther = isEdit && teacherToEdit.schoolType === 'other';
+    if (teacherSchoolOwn) teacherSchoolOwn.checked = !isOther;
+    if (teacherSchoolOther) teacherSchoolOther.checked = isOther;
+    syncTeacherSchoolFieldVisibility();
+    if (teacherInputSchoolName) {
+      teacherInputSchoolName.value = isOther ? (teacherToEdit.schoolName || '') : '';
+    }
+
+    modalTeacherEdit.classList.add('active');
+    setTimeout(() => teacherInputName.focus(), 40);
+  }
+
+  if (teacherSchoolOwn) teacherSchoolOwn.addEventListener('change', syncTeacherSchoolFieldVisibility);
+  if (teacherSchoolOther) teacherSchoolOther.addEventListener('change', syncTeacherSchoolFieldVisibility);
+
+  // Yeni Öğretmen Ekle Modal
+  btnAddTeacher.addEventListener('click', () => {
+    if (!ensureNotExpiredOrAlert()) return;
+    openTeacherModal(null);
+  });
+
+  btnTeacherModalClose.addEventListener('click', () => {
+    modalTeacherEdit.classList.remove('active');
+  });
+
+  teacherForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!ensureNotExpiredOrAlert()) return;
+    const name = teacherInputName.value.trim().toLocaleUpperCase('tr');
+    if (!name) return;
+
+    const schoolType = (teacherSchoolOther && teacherSchoolOther.checked) ? 'other' : 'own';
+    const schoolName = schoolType === 'other' && teacherInputSchoolName
+      ? teacherInputSchoolName.value.trim()
+      : '';
+
+    if (schoolType === 'other' && !schoolName) {
+      alert('Başka okul seçildiğinde okul adını girmeniz zorunludur.');
+      if (teacherInputSchoolName) teacherInputSchoolName.focus();
+      return;
+    }
+
+    const editId = teacherInputId ? teacherInputId.value.trim() : '';
+    if (editId) {
+      const target = teachers.find(item => item.id === editId);
+      if (target) {
+        const oldName = target.name;
+        target.name = name;
+        target.gender = teacherInputGender.value;
+        target.schoolType = schoolType;
+        target.schoolName = schoolName;
+        target.etutEligible = teacherInputEtut.checked;
+        target.active = teacherInputActive.checked;
+        target.exempt = !teacherInputActive.checked;
+
+        // İsim değiştiyse mevcut ve kayıtlı nöbet çizelgelerindeki adları da güncelle
+        if (oldName && oldName !== name) {
+          const allSlotRoles = [...window.dutyScheduler.ALL_SLOT_IDS, 'etut'];
+          const renameInDays = (daysArr) => {
+            if (!Array.isArray(daysArr)) return;
+            daysArr.forEach(d => {
+              allSlotRoles.forEach(r => {
+                if (d[r] === oldName) d[r] = name;
+              });
+            });
+          };
+          renameInDays(scheduleDays);
+          Object.keys(monthlySchedules).forEach(k => renameInDays(monthlySchedules[k]));
+        }
+
+        saveToLocalStorage();
+        renderTeachersList();
+        renderScheduleTable();
+        renderStatsTables();
+        renderPuantajTables();
+        modalTeacherEdit.classList.remove('active');
+        showToast('Öğretmen Güncellendi', `"${name}" bilgileri kaydedildi.`, 'success');
+        return;
+      }
+    }
+
+    const newTeacher = {
+      id: 't_' + Date.now(),
+      name: name,
+      gender: teacherInputGender.value,
+      schoolType: schoolType,
+      schoolName: schoolName,
+      etutEligible: teacherInputEtut.checked,
+      active: teacherInputActive.checked,
+      exempt: !teacherInputActive.checked,
+      blockedDates: [],
+      blockedDays: []
+    };
+
+    teachers.push(newTeacher);
+    saveToLocalStorage();
+    renderTeachersList();
+    renderStatsTables();
+    renderPuantajTables();
+    modalTeacherEdit.classList.remove('active');
+    alert(`"${name}" başarıyla öğretmen kadrosuna eklendi.`);
+  });
+
+  // Excel'den Kadro Yükle (Hem standart H/M şablonu hem Belletmenler sayfasını destekler)
+  fileExcelUpload.addEventListener('click', (e) => {
+    if (!ensureNotExpiredOrAlert()) {
+      e.preventDefault();
+    }
+  });
+  fileExcelUpload.addEventListener('change', (e) => {
+    if (!ensureNotExpiredOrAlert()) {
+      e.target.value = '';
+      return;
+    }
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const importedTeachers = [];
+
+        // 1. Öncelik: 'Belletmenler' sayfası (6030 / MEB ikili puantaj şablonu: I=Ad, J=Okul, K=Cinsiyet, A2=Kendi Okulu)
+        if (workbook.SheetNames.includes('Belletmenler')) {
+          const bSheet = workbook.Sheets['Belletmenler'];
+          const ownSchoolRef = bSheet['A2'] ? String(bSheet['A2'].v || '').trim().toLocaleLowerCase('tr') : '';
+          for (let r = 3; r <= 100; r++) {
+            const rawName = bSheet[`I${r}`] ? String(bSheet[`I${r}`].v || '').trim() : '';
+            if (!rawName || rawName.length < 3) continue;
+            const upperName = rawName.toLocaleUpperCase('tr');
+            if (importedTeachers.some(t => t.name === upperName)) continue;
+
+            const rawSchool = bSheet[`J${r}`] ? String(bSheet[`J${r}`].v || '').trim() : '';
+            const rawGender = bSheet[`K${r}`] ? String(bSheet[`K${r}`].v || '').trim().toLocaleLowerCase('tr') : '';
+            const gender = rawGender.includes('kad') || rawGender === 'k' ? 'K' : 'E';
+            const isOther = Boolean(rawSchool && ownSchoolRef && rawSchool.toLocaleLowerCase('tr') !== ownSchoolRef);
+
+            importedTeachers.push({
+              id: 'imp_b_' + r,
+              name: upperName,
+              gender,
+              schoolType: isOther ? 'other' : 'own',
+              schoolName: isOther ? rawSchool : '',
+              etutEligible: false,
+              active: true,
+              exempt: false,
+              blockedDates: [],
+              blockedDays: []
+            });
+          }
+        }
+
+        // 2. Standart şablon (İlk sayfa H sütunu Kız, M sütunu Erkek)
+        if (importedTeachers.length === 0) {
+          const firstSheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[firstSheetName];
+          for (let r = 1; r <= 50; r++) {
+            const fName = sheet[`H${r}`] ? String(sheet[`H${r}`].v).trim() : null;
+            if (fName && fName !== 'ÖĞRETMEN' && fName.length > 3 && !importedTeachers.some(t => t.name === fName.toLocaleUpperCase('tr'))) {
+              importedTeachers.push({
+                id: 'imp_f_' + r,
+                name: fName.toLocaleUpperCase('tr'),
+                gender: 'K',
+                schoolType: 'own',
+                schoolName: '',
+                etutEligible: false,
+                active: true,
+                exempt: false,
+                blockedDates: [],
+                blockedDays: []
+              });
+            }
+
+            const mName = sheet[`M${r}`] ? String(sheet[`M${r}`].v).trim() : null;
+            if (mName && mName !== 'ÖĞRETMEN' && mName.length > 3 && !importedTeachers.some(t => t.name === mName.toLocaleUpperCase('tr'))) {
+              importedTeachers.push({
+                id: 'imp_m_' + r,
+                name: mName.toLocaleUpperCase('tr'),
+                gender: 'E',
+                schoolType: 'own',
+                schoolName: '',
+                etutEligible: mName.includes('HAYRULLAH') || mName.includes('NEBİ') || mName.includes('MUTLU'),
+                active: true,
+                exempt: false,
+                blockedDates: [],
+                blockedDays: []
+              });
+            }
+          }
+        }
+
+        if (importedTeachers.length > 0) {
+          teachers = importedTeachers;
+          saveToLocalStorage();
+          renderTeachersList();
+          renderStatsTables();
+          renderPuantajTables();
+          const otherCount = importedTeachers.filter(t => t.schoolType === 'other').length;
+          alert(`Excel dosyasından ${importedTeachers.length} öğretmen başarıyla yüklendi! (${importedTeachers.length - otherCount} Kendi Okulu, ${otherCount} Başka Okul)`);
+        } else {
+          alert('Excel dosyasında öğretmen isimleri bulunamadı.');
+        }
+      } catch (err) {
+        alert('Excel dosyası okunurken hata oluştu: ' + err.message);
+      }
+      e.target.value = '';
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  // ================= TAB 3: TATİL VE KAPALI GÜNLER TAKVİMİ =================
+  function renderHolidaysCalendar() {
+    calendarGrid.innerHTML = '';
+    const daysInM = window.dutyScheduler.getDaysInMonth(currentYear, currentMonth);
+
+    // Gün Başlıkları
+    const dayHeaders = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+    dayHeaders.forEach(dh => {
+      const hDiv = document.createElement('div');
+      hDiv.className = 'cal-header-cell';
+      hDiv.textContent = dh;
+      calendarGrid.appendChild(hDiv);
+    });
+
+    // İlk günün haftanın hangi günü başladığı
+    const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay(); // 0: Paz, 1: Pzt
+    const shift = (firstDayIndex + 6) % 7; // Pzt: 0, Paz: 6
+    for (let s = 0; s < shift; s++) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.style.opacity = '0';
+      calendarGrid.appendChild(emptyDiv);
+    }
+
+    for (let d = 1; d <= daysInM; d++) {
+      const dKey = window.dutyScheduler.formatDateKey(currentYear, currentMonth, d);
+      const dateObj = new Date(currentYear, currentMonth, d);
+      const dayOfWeek = dateObj.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const isClosed = !!closedDates[dKey];
+
+      const cell = document.createElement('div');
+      cell.className = `cal-day-cell ${isClosed ? 'status-closed' : 'status-open'}`;
+      if (isWeekend) cell.classList.add('is-weekend');
+
+      cell.innerHTML = `
+        <div class="cal-day-num">${d}</div>
+        <div style="font-size:0.75rem; color:#64748b;">${window.dutyScheduler.turkishDays[dayOfWeek]}</div>
+        <div class="cal-day-status">${isClosed ? 'KAPALI' : 'AÇIK'}</div>
+      `;
+
+      cell.addEventListener('click', () => {
+        if (!ensureNotExpiredOrAlert()) return;
+        if (closedDates[dKey]) {
+          delete closedDates[dKey];
+        } else {
+          closedDates[dKey] = 'YURT KAPALI';
+        }
+        renderHolidaysCalendar();
+        runDistribution();
+        saveToLocalStorage();
+      });
+
+      calendarGrid.appendChild(cell);
+    }
+  }
+
+  btnPresetAratatil.addEventListener('click', () => {
+    if (!ensureNotExpiredOrAlert()) return;
+    for (let d = 14; d <= 22; d++) {
+      const dKey = window.dutyScheduler.formatDateKey(currentYear, currentMonth, d);
+      closedDates[dKey] = 'ARA TATİL';
+    }
+    renderHolidaysCalendar();
+    runDistribution();
+    saveToLocalStorage();
+    alert('14 - 22 Kasım Ara Tatil günleri yurt kapalı olarak ayarlandı!');
+  });
+
+  btnPresetAllOpen.addEventListener('click', () => {
+    if (!ensureNotExpiredOrAlert()) return;
+    closedDates = {};
+    renderHolidaysCalendar();
+    runDistribution();
+    saveToLocalStorage();
+    alert('Tüm günler yurt açık olarak ayarlandı!');
+  });
+
+  // ================= TAB 4: AYARLAR FORMU =================
+  settingsForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!ensureNotExpiredOrAlert()) return;
+    settings.instTop = settingInstTop.value.trim();
+    settings.instMid = settingInstMid.value.trim();
+    settings.schoolName = settingSchoolName.value.trim();
+    if (settingDistrict) settings.district = settingDistrict.value.trim();
+    if (settingNobetHours) settings.nobetHours = Math.max(1, parseInt(settingNobetHours.value, 10) || 8);
+    if (settingEtutHours) settings.etutHours = Math.max(1, parseInt(settingEtutHours.value, 10) || 4);
+    settings.approvalDate = settingApprovalDate.value.trim();
+    settings.vicePrincipal = settingVicePrincipal.value.trim();
+    settings.viceTitle = settingViceTitle.value.trim();
+    settings.principal = settingPrincipal.value.trim();
+    settings.principalTitle = settingPrincipalTitle.value.trim();
+
+    applySettingsToUI();
+    renderPuantajTables();
+    saveToLocalStorage();
+    alert('Kurum ve imza ayarları başarıyla kaydedildi!');
+  });
+
+  btnResetDefaults.addEventListener('click', async () => {
+    if (!ensureNotExpiredOrAlert()) return;
+    if (confirm('Sadece kendi hesabınıza ait ayarları, öğretmen listesini ve çizelgeleri sıfırlamak istediğinize emin misiniz?')) {
+      const activeKey = getActiveStorageKey();
+      if (activeKey) {
+        localStorage.removeItem(activeKey);
+        localStorage.removeItem(activeKey + '_backup');
+      }
+      const isAdminUser = !!(window.authManager && window.authManager.isAdmin());
+      resetInMemoryWorkspaceState(isAdminUser);
+      if (isAdminUser) {
+        teachers = window.dutyScheduler.getDefaultTeachers();
+        closedDates = window.dutyScheduler.getDefaultClosedDates(currentYear, currentMonth);
+        runDistribution();
+      } else {
+        scheduleDays = window.dutyScheduler.generateMonthDays(currentYear, currentMonth, {});
+      }
+      renderFullWorkspaceUI();
+      saveToLocalStorage();
+      showToast('Hesap Verileri Sıfırlandı', 'Yalnızca aktif hesabınızın verileri sıfırlandı.', 'info');
+    }
+  });
+
+  // ================= DIŞA AKTARMA (PDF, EXCEL, YAZDIR) =================
+  const modalPdfExport = document.getElementById('modal-pdf-export');
+  const btnPdfModalClose = document.getElementById('btn-pdf-modal-close');
+  const btnPdfModalCancel = document.getElementById('btn-pdf-modal-cancel');
+  const btnPdfModalConfirm = document.getElementById('btn-pdf-modal-confirm');
+  const btnPdfModalPrint = document.getElementById('btn-pdf-modal-print');
+  const pdfOptEtut = document.getElementById('pdf-opt-etut');
+  const pdfOptStats = document.getElementById('pdf-opt-stats');
+  const pdfOptSignatures = document.getElementById('pdf-opt-signatures');
+
+  const chkViewEtut = document.getElementById('chk-view-etut');
+  const chkViewStats = document.getElementById('chk-view-stats');
+
+  function syncClosedBannerColspans(hideEtut) {
+    const targetSpan = hideEtut ? dutyColumns.length : (dutyColumns.length + 1);
+    document.querySelectorAll('#roster-tbody td[data-closed-banner="true"]').forEach(td => {
+      td.setAttribute('colspan', String(targetSpan));
+    });
+  }
+
+  function syncViewToggles() {
+    const printableRoster = document.getElementById('printable-roster');
+    if (!printableRoster) return;
+
+    const hideEtut = !!(chkViewEtut && !chkViewEtut.checked);
+    if (hideEtut) {
+      printableRoster.classList.add('hide-etut-col');
+    } else {
+      printableRoster.classList.remove('hide-etut-col');
+    }
+    syncClosedBannerColspans(hideEtut);
+
+    if (chkViewStats && !chkViewStats.checked) {
+      printableRoster.classList.add('hide-stats-section');
+    } else {
+      printableRoster.classList.remove('hide-stats-section');
+    }
+  }
+
+  // PDF Seçenekleri Modalını Aç
+  btnExportPdf.addEventListener('click', () => {
+    if (!ensureExportRightCheck()) return;
+    if (pdfOptEtut && chkViewEtut) pdfOptEtut.checked = chkViewEtut.checked;
+    if (pdfOptStats && chkViewStats) pdfOptStats.checked = chkViewStats.checked;
+    modalPdfExport.classList.add('active');
+  });
+
+  if (btnPdfModalClose) btnPdfModalClose.addEventListener('click', () => modalPdfExport.classList.remove('active'));
+  if (btnPdfModalCancel) btnPdfModalCancel.addEventListener('click', () => modalPdfExport.classList.remove('active'));
+
+  if (btnPdfModalConfirm) {
+    btnPdfModalConfirm.addEventListener('click', async () => {
+      const rightRes = await consumeExportRightOrAlert();
+      if (!rightRes) return;
+      modalPdfExport.classList.remove('active');
+      generatePdfWithOptions({
+        includeEtut: pdfOptEtut ? pdfOptEtut.checked : true,
+        includeStats: pdfOptStats ? pdfOptStats.checked : true,
+        includeSignatures: pdfOptSignatures ? pdfOptSignatures.checked : true
+      });
+    });
+  }
+
+  if (btnPdfModalPrint) {
+    btnPdfModalPrint.addEventListener('click', async () => {
+      const rightRes = await consumeExportRightOrAlert();
+      if (!rightRes) return;
+      modalPdfExport.classList.remove('active');
+      printWithOptions({
+        includeEtut: pdfOptEtut ? pdfOptEtut.checked : true,
+        includeStats: pdfOptStats ? pdfOptStats.checked : true,
+        includeSignatures: pdfOptSignatures ? pdfOptSignatures.checked : true
+      });
+    });
+  }
+
+  /**
+   * Yazdırılabilir bir HTML alanını (Nöbet Çizelgesi veya Puantaj)
+   * taşma, kesilme veya 2. sayfaya sarkma olmadan KESİN OLARAK TEK A4 SAYFASINA sığdırır.
+   */
+  async function exportElementToSinglePagePdf(element, opts) {
+    const orientation = opts && opts.orientation === 'landscape' ? 'landscape' : 'portrait';
+    const filename = (opts && opts.filename) || 'belge.pdf';
+    const marginMm = typeof (opts && opts.marginMm) === 'number' ? opts.marginMm : 4;
+    const minCssWidth = (opts && opts.targetCssWidth) || (orientation === 'landscape' ? 1120 : 794);
+    const scale = (opts && opts.scale) || 2;
+
+    // Yeni uygulanan PDF stillerinin yerleşmesi için 2 kare bekle
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    // Elemanın taşmasız doğal genişliğini ve yüksekliğini ölç
+    const contentW = Math.ceil(Math.max(element.scrollWidth || 0, element.offsetWidth || 0, minCssWidth));
+    const contentH = Math.ceil(Math.max(element.scrollHeight || 0, element.offsetHeight || 0, 100));
+
+    // Tüm içeriği kırpmadan ve sayfa bölme boşluğu eklemeden yüksek çözünürlüklü canvas'a yakala
+    const captureOpt = {
+      margin: [0, 0, 0, 0],
+      image: { type: 'jpeg', quality: 0.98 },
+      enableLinks: false,
+      pagebreak: { mode: [] },
+      html2canvas: {
+        scale: scale,
+        useCORS: true,
+        letterRendering: true,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: Math.max(document.documentElement.clientWidth || 0, contentW + 80),
+        windowHeight: Math.max(document.documentElement.clientHeight || 0, contentH + 200),
+        onclone: (clonedDoc) => {
+          const ov = clonedDoc.querySelector('.html2pdf__overlay');
+          if (ov) {
+            ov.style.overflow = 'visible';
+            ov.style.bottom = 'auto';
+            ov.style.height = 'auto';
+            ov.style.width = Math.max(contentW + 80, clonedDoc.documentElement.clientWidth || 0) + 'px';
+          }
+          const ct = clonedDoc.querySelector('.html2pdf__container');
+          if (ct) {
+            ct.style.overflow = 'visible';
+            ct.style.height = 'auto';
+            ct.style.width = contentW + 'px';
+          }
+        }
+      },
+      jsPDF: {
+        unit: 'px',
+        format: [contentW, contentW],
+        orientation: 'portrait'
+      }
+    };
+
+    const srcCanvas = await html2pdf().set(captureOpt).from(element).toCanvas().get('canvas');
+    if (!srcCanvas || !srcCanvas.width || !srcCanvas.height) {
+      throw new Error('PDF görüntüsü oluşturulamadı.');
+    }
+
+    // Hedef A4 kullanılabilir alan en-boy oranına (innerRatio) göre tek sayfa tuvali oluştur
+    const pageW = orientation === 'landscape' ? 297 : 210;
+    const pageH = orientation === 'landscape' ? 210 : 297;
+    const innerW = pageW - marginMm * 2;
+    const innerH = pageH - marginMm * 2;
+    const innerRatio = innerH / innerW;
+    const safeRatio = innerRatio * 0.9975;
+
+    const srcW = srcCanvas.width;
+    const srcH = srcCanvas.height;
+    const maxSinglePageH = Math.floor(srcW * safeRatio) - 6;
+
+    let pageCanvas = srcCanvas;
+    if (srcH > maxSinglePageH) {
+      // İçerik 1 A4 sayfasından uzunsa: oranı bozmadan yüksekliğe tam sığdır ve yatayda ortala
+      const MAX_DIM = 11500;
+      let targetH = srcH;
+      let targetW = Math.ceil((srcH + 8) / safeRatio);
+      let drawW = srcW;
+      let drawH = srcH;
+
+      if (targetW > MAX_DIM || targetH > MAX_DIM) {
+        const down = Math.min(MAX_DIM / targetW, MAX_DIM / targetH);
+        targetW = Math.max(1, Math.floor(targetW * down));
+        targetH = Math.max(1, Math.floor(targetH * down));
+        drawW = Math.max(1, Math.floor(srcW * down));
+        drawH = Math.max(1, Math.floor(srcH * down));
+      }
+
+      const fitted = document.createElement('canvas');
+      fitted.width = targetW;
+      fitted.height = targetH;
+      const ctx = fitted.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, targetW, targetH);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      const offsetX = Math.max(0, Math.floor((targetW - drawW) / 2));
+      ctx.drawImage(srcCanvas, 0, 0, srcW, srcH, offsetX, 0, drawW, drawH);
+      pageCanvas = fitted;
+    }
+
+    const saveOpt = {
+      margin: [marginMm, marginMm, marginMm, marginMm],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      enableLinks: false,
+      jsPDF: { unit: 'mm', format: 'a4', orientation: orientation }
+    };
+
+    const pdf = await html2pdf().set(saveOpt).from(pageCanvas, 'canvas').toPdf().get('pdf');
+    while (pdf.internal && typeof pdf.internal.getNumberOfPages === 'function' && pdf.internal.getNumberOfPages() > 1) {
+      pdf.deletePage(pdf.internal.getNumberOfPages());
+    }
+    pdf.save(filename);
+  }
+
+  function generatePdfWithOptions(opts) {
+    const printableRoster = document.getElementById('printable-roster');
+
+    const fRows = femaleStatsTbody ? femaleStatsTbody.querySelectorAll('tr').length : 0;
+    const mRows = maleStatsTbody ? maleStatsTbody.querySelectorAll('tr').length : 0;
+    const maxStatsRows = opts.includeStats ? Math.max(fRows, mRows) : 0;
+    const useSpacious = !opts.includeStats;
+    const useCompact = opts.includeStats && maxStatsRows > 22;
+
+    // Geçici tek sayfa ve görünüm sınıflarını uygula
+    printableRoster.classList.add('pdf-single-page');
+    printableRoster.classList.toggle('pdf-spacious', useSpacious);
+    printableRoster.classList.toggle('pdf-compact', useCompact);
+    printableRoster.classList.toggle('hide-etut-col', !opts.includeEtut);
+    printableRoster.classList.toggle('hide-stats-section', !opts.includeStats);
+    printableRoster.classList.toggle('hide-signatures', !opts.includeSignatures);
+    syncClosedBannerColspans(!opts.includeEtut);
+
+    // Kilit butonlarını ve simgelerini PDF'te kesinlikle kaldır/gizle
+    const lockEls = printableRoster.querySelectorAll('.btn-lock-toggle, .lock-indicator');
+    lockEls.forEach(el => el.style.setProperty('display', 'none', 'important'));
+
+    const mName = window.dutyScheduler.monthNames[currentMonth];
+    const filename = `${currentYear}_${mName}_Pansiyon_Nobet_Cizelgesi.pdf`;
+
+    btnExportPdf.disabled = true;
+    btnExportPdf.textContent = '⏳ PDF Oluşturuluyor...';
+
+    const cleanup = () => {
+      btnExportPdf.disabled = false;
+      btnExportPdf.innerHTML = '<span>📄</span> PDF Olarak Kaydet';
+      printableRoster.classList.remove('pdf-single-page', 'pdf-spacious', 'pdf-compact', 'hide-signatures');
+      lockEls.forEach(el => el.style.removeProperty('display'));
+      syncViewToggles();
+    };
+
+    exportElementToSinglePagePdf(printableRoster, {
+      filename: filename,
+      orientation: 'portrait',
+      marginMm: 4,
+      targetCssWidth: 794,
+      scale: 2
+    }).then(() => {
+      cleanup();
+    }).catch(err => {
+      console.error(err);
+      cleanup();
+      window.print();
+    });
+  }
+
+  function printWithOptions(opts) {
+    const printableRoster = document.getElementById('printable-roster');
+    printableRoster.classList.toggle('hide-etut-col', !opts.includeEtut);
+    printableRoster.classList.toggle('hide-stats-section', !opts.includeStats);
+    printableRoster.classList.toggle('hide-signatures', !opts.includeSignatures);
+    syncClosedBannerColspans(!opts.includeEtut);
+
+    const lockEls = printableRoster.querySelectorAll('.btn-lock-toggle, .lock-indicator');
+    lockEls.forEach(el => el.style.setProperty('display', 'none', 'important'));
+
+    window.print();
+    setTimeout(() => {
+      printableRoster.classList.remove('hide-signatures');
+      lockEls.forEach(el => el.style.removeProperty('display'));
+      syncViewToggles();
+    }, 1000);
+  }
+
+  // Excel Olarak İndir (.xlsx) - Dinamik Kız (0..3) + Erkek (0..3) = Toplam 1..6 Sütun Destekli Şablon Formatında
+  btnExportExcel.addEventListener('click', async () => {
+    const rightRes = await consumeExportRightOrAlert();
+    if (!rightRes) return;
+
+    try {
+      const wb = XLSX.utils.book_new();
+      const ws = {};
+
+      const activeCols = window.dutyScheduler.normalizeDutyColumns(dutyColumns);
+      const dutyCount = activeCols.length; // 1, 2 veya 3
+      const colLet = (idx) => XLSX.utils.encode_col(idx);
+
+      const firstDutyIdx = 2; // C
+      const lastDutyIdx = firstDutyIdx + dutyCount - 1;
+      const etutColIdx = lastDutyIdx + 1;
+      const spacerColIdx = etutColIdx + 1;
+      const fStartIdx = spacerColIdx + 1; // Kadın özet başlangıcı (4 sütun)
+      const mStartIdx = fStartIdx + 4;    // Erkek özet başlangıcı (7 sütun)
+      const lastColIdx = mStartIdx + 6;
+
+      const mName = window.dutyScheduler.monthNames[currentMonth] || 'Kasım';
+      const sheetName = `NÖBET ${mName.toUpperCase()}`.slice(0, 31);
+
+      // Dinamik sütun genişlikleri (!cols)
+      const colsSpec = [
+        { wch: 12.33 }, // A: TARİH
+        { wch: 13.33 }  // B: GÜN
+      ];
+      activeCols.forEach(() => colsSpec.push({ wch: 22.50 }));
+      colsSpec.push(
+        { wch: 21.11 }, // ETÜT
+        { wch: 3.00 },  // Ayırıcı Boşluk
+        { wch: 19.78 }, // Kadın Öğretmen
+        { wch: 10.00 }, // TOPLAM
+        { wch: 11.33 }, // ETÜT
+        { wch: 9.11 },  // HAFTA SONU
+        { wch: 9.11 },  // SIRA
+        { wch: 25.11 }, // Erkek Öğretmen
+        { wch: 20.33 }, // TOPLAM
+        { wch: 11.00 }, // HAFTA SONU
+        { wch: 10.78 }, // ETÜT
+        { wch: 12.00 }, // ETÜT+TOPLAMI
+        { wch: 11.89 }  // PUAN
+      );
+      ws['!cols'] = colsSpec;
+
+      const merges = [];
+
+      // İnce Kenarlık Stili (Orijinal ile birebir)
+      const thinBorder = {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '000000' } },
+        right: { style: 'thin', color: { rgb: '000000' } }
+      };
+
+      // Başlık Stili (#FFC000 Amber Gold dolgulu, kalın Calibri 11pt, ortalı)
+      const headerStyle = {
+        font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: '000000' } },
+        fill: { fgColor: { rgb: 'FFC000' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: thinBorder
+      };
+
+      // Normal Çizelge Hücreleri (Beyaz zemin)
+      const scheduleCenterStyle = {
+        font: { name: 'Calibri', sz: 10, bold: false, color: { rgb: '000000' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: thinBorder
+      };
+
+      const scheduleLeftStyle = {
+        font: { name: 'Calibri', sz: 10, bold: false, color: { rgb: '000000' } },
+        alignment: { horizontal: 'left', vertical: 'center' },
+        border: thinBorder
+      };
+
+      // Hafta Sonu ve Kapalı Günler (#FFC000 Amber Gold dolgulu)
+      const scheduleHighlightLeftStyle = {
+        font: { name: 'Calibri', sz: 10, bold: false, color: { rgb: '000000' } },
+        fill: { fgColor: { rgb: 'FFC000' } },
+        alignment: { horizontal: 'left', vertical: 'center' },
+        border: thinBorder
+      };
+
+      // Özet Tablo Başlık Stili
+      const summaryHeaderStyle = {
+        font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '000000' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: thinBorder
+      };
+
+      // Özet Tablo Veri Stilleri
+      const summaryDataCenterStyle = {
+        font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '000000' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: thinBorder
+      };
+
+      const summaryDataLeftStyle = {
+        font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '000000' } },
+        alignment: { horizontal: 'left', vertical: 'center' },
+        border: thinBorder
+      };
+
+      // 1. Başlık Satırı (Satır 1)
+      ws['A1'] = { t: 's', v: 'TARİH', s: headerStyle };
+      ws['B1'] = { t: 's', v: 'GÜN', s: headerStyle };
+      activeCols.forEach((col, i) => {
+        ws[`${colLet(firstDutyIdx + i)}1`] = { t: 's', v: col.title.toUpperCase(), s: headerStyle };
+      });
+      ws[`${colLet(etutColIdx)}1`] = { t: 's', v: 'ETÜT', s: headerStyle };
+
+      // 2. Çizelge Günleri (Satır 4'ten başlar)
+      const startRow = 4;
+      const endScheduleRow = startRow + scheduleDays.length - 1;
+
+      scheduleDays.forEach((rawDay, idx) => {
+        const d = window.dutyScheduler.migrateDayObject(rawDay);
+        const r = startRow + idx;
+        const isWknd = d.isWeekend;
+        const isClosed = d.isClosed;
+        const shouldHighlight = isWknd || isClosed;
+
+        const dateParts = d.dateKey.split('-');
+        const formattedDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
+
+        // A ve B: Tarih ve Gün (Ortalı)
+        ws[`A${r}`] = { t: 's', v: formattedDate, s: scheduleCenterStyle };
+        ws[`B${r}`] = { t: 's', v: (d.dayName || '').toUpperCase(), s: scheduleCenterStyle };
+
+        // Dinamik Belletici Sütunları + Etüt
+        const dutyStyle = shouldHighlight ? scheduleHighlightLeftStyle : scheduleLeftStyle;
+
+        if (isClosed) {
+          const closedText = d.closedReason ? `KAPALI (${d.closedReason})` : 'KAPALI';
+          activeCols.forEach((col, i) => {
+            ws[`${colLet(firstDutyIdx + i)}${r}`] = { t: 's', v: i === 0 ? closedText : '', s: dutyStyle };
+          });
+          ws[`${colLet(etutColIdx)}${r}`] = { t: 's', v: '', s: dutyStyle };
+        } else {
+          activeCols.forEach((col, i) => {
+            ws[`${colLet(firstDutyIdx + i)}${r}`] = { t: 's', v: d[col.id] || '', s: dutyStyle };
+          });
+          ws[`${colLet(etutColIdx)}${r}`] = { t: 's', v: d.etut || '', s: dutyStyle };
+        }
+      });
+
+      // 3. Sağ Taraf Özet Tabloları (Satır 8'den başlar)
+      const fNameCol = colLet(fStartIdx);
+      const fTotalCol = colLet(fStartIdx + 1);
+      const fEtutCol = colLet(fStartIdx + 2);
+      const fWkndCol = colLet(fStartIdx + 3);
+
+      const mSiraCol = colLet(mStartIdx);
+      const mNameCol = colLet(mStartIdx + 1);
+      const mTotalCol = colLet(mStartIdx + 2);
+      const mWkndCol = colLet(mStartIdx + 3);
+      const mEtutCol = colLet(mStartIdx + 4);
+      const mEtutPlusCol = colLet(mStartIdx + 5);
+      const mScoreCol = colLet(mStartIdx + 6);
+
+      const dutyRangeRef = `${colLet(firstDutyIdx)}$${startRow}:${colLet(lastDutyIdx)}$${endScheduleRow}`;
+      const etutRangeRef = `${colLet(etutColIdx)}$${startRow}:${colLet(etutColIdx)}$${endScheduleRow}`;
+
+      ws[`${fNameCol}8`] = { t: 's', v: 'ÖĞRETMEN', s: summaryHeaderStyle };
+      ws[`${fTotalCol}8`] = { t: 's', v: 'TOPLAM', s: summaryHeaderStyle };
+      ws[`${fEtutCol}8`] = { t: 's', v: 'ETÜT', s: summaryHeaderStyle };
+      ws[`${fWkndCol}8`] = { t: 's', v: 'HAFTA SONU', s: summaryHeaderStyle };
+
+      ws[`${mSiraCol}8`] = { t: 's', v: 'SIRA', s: summaryHeaderStyle };
+      ws[`${mNameCol}8`] = { t: 's', v: 'ÖĞRETMEN', s: summaryHeaderStyle };
+      ws[`${mTotalCol}8`] = { t: 's', v: 'TOPLAM', s: summaryHeaderStyle };
+      ws[`${mWkndCol}8`] = { t: 's', v: 'HAFTA SONU', s: summaryHeaderStyle };
+      ws[`${mEtutCol}8`] = { t: 's', v: 'ETÜT', s: summaryHeaderStyle };
+      ws[`${mEtutPlusCol}8`] = { t: 's', v: 'ETÜT+TOPLAMI', s: summaryHeaderStyle };
+      ws[`${mScoreCol}8`] = { t: 's', v: 'PUAN', s: summaryHeaderStyle };
+
+      const femaleTeachers = teachers.filter(t => t.gender === 'K' && t.active !== false);
+      const maleTeachers = teachers.filter(t => t.gender === 'E' && t.active !== false);
+
+      // Kadın Öğretmenler Verileri (Satır 9'dan başlar)
+      femaleTeachers.forEach((t, i) => {
+        const r = 9 + i;
+        let totalHostel = 0;
+        let totalEtut = 0;
+        let weekendCount = 0;
+
+        scheduleDays.forEach(d => {
+          if (d.isClosed) return;
+          activeCols.forEach(col => {
+            if (d[col.id] === t.name) {
+              totalHostel++;
+              if (d.isWeekend) weekendCount++;
+            }
+          });
+          if (d.etut === t.name) totalEtut++;
+        });
+
+        ws[`${fNameCol}${r}`] = { t: 's', v: t.name, s: summaryDataLeftStyle };
+        ws[`${fTotalCol}${r}`] = {
+          t: 'n',
+          v: totalHostel,
+          f: `COUNTIF(${dutyRangeRef},"${t.name}")`,
+          s: summaryDataCenterStyle
+        };
+        ws[`${fEtutCol}${r}`] = {
+          t: 'n',
+          v: totalEtut,
+          f: `COUNTIF(${etutRangeRef},"${t.name}")`,
+          s: summaryDataCenterStyle
+        };
+        ws[`${fWkndCol}${r}`] = {
+          t: 'n',
+          v: weekendCount,
+          s: summaryDataCenterStyle
+        };
+      });
+
+      // Erkek Öğretmenler Verileri (Satır 9'dan başlar)
+      maleTeachers.forEach((t, i) => {
+        const r = 9 + i;
+        let totalHostel = 0;
+        let totalEtut = 0;
+        let weekendCount = 0;
+
+        scheduleDays.forEach(d => {
+          if (d.isClosed) return;
+          activeCols.forEach(col => {
+            if (d[col.id] === t.name) {
+              totalHostel++;
+              if (d.isWeekend) weekendCount++;
+            }
+          });
+          if (d.etut === t.name) totalEtut++;
+        });
+
+        const etutPlusTotal = totalHostel + (totalEtut / 2);
+        const score = weekendCount + (etutPlusTotal / 2);
+
+        ws[`${mSiraCol}${r}`] = { t: 'n', v: i + 1, s: summaryDataCenterStyle };
+        ws[`${mNameCol}${r}`] = { t: 's', v: t.name, s: summaryDataLeftStyle };
+        ws[`${mTotalCol}${r}`] = {
+          t: 'n',
+          v: totalHostel,
+          f: `COUNTIF(${dutyRangeRef},"${t.name}")`,
+          s: summaryDataCenterStyle
+        };
+        ws[`${mWkndCol}${r}`] = {
+          t: 'n',
+          v: weekendCount,
+          s: summaryDataCenterStyle
+        };
+        ws[`${mEtutCol}${r}`] = {
+          t: 'n',
+          v: totalEtut,
+          f: `COUNTIF(${etutRangeRef},"${t.name}")`,
+          s: summaryDataCenterStyle
+        };
+        ws[`${mEtutPlusCol}${r}`] = {
+          t: 'n',
+          v: etutPlusTotal,
+          f: `${mTotalCol}${r}+(${mEtutCol}${r}/2)`,
+          s: summaryDataCenterStyle
+        };
+        ws[`${mScoreCol}${r}`] = {
+          t: 'n',
+          v: score,
+          f: `${mWkndCol}${r}+(${mEtutPlusCol}${r}/2)`,
+          s: summaryDataCenterStyle
+        };
+      });
+
+      // Erkek Öğretmenler Toplam Satırı
+      if (maleTeachers.length > 0) {
+        const totalRow = 9 + maleTeachers.length;
+        ws[`${mNameCol}${totalRow}`] = { t: 's', v: 'TOPLAM', s: summaryHeaderStyle };
+        ws[`${mTotalCol}${totalRow}`] = {
+          t: 'n',
+          f: `SUM(${mTotalCol}9:${mTotalCol}${totalRow - 1})`,
+          s: summaryDataCenterStyle
+        };
+      }
+
+      // 4. İmzalar
+      const maxContentRow = Math.max(endScheduleRow, 9 + Math.max(femaleTeachers.length, maleTeachers.length));
+      const sigRow1 = Math.max(39, maxContentRow + 3);
+      const sigRow2 = sigRow1 + 1;
+
+      const leftSigEnd = Math.min(2, etutColIdx - 1);
+      const rightSigStart = leftSigEnd + 1;
+      const rightSigEnd = Math.max(rightSigStart, etutColIdx);
+
+      merges.push({ s: { c: 0, r: sigRow1 - 1 }, e: { c: leftSigEnd, r: sigRow1 - 1 } });
+      merges.push({ s: { c: rightSigStart, r: sigRow1 - 1 }, e: { c: rightSigEnd, r: sigRow1 - 1 } });
+      merges.push({ s: { c: 0, r: sigRow2 - 1 }, e: { c: leftSigEnd, r: sigRow2 - 1 } });
+      merges.push({ s: { c: rightSigStart, r: sigRow2 - 1 }, e: { c: rightSigEnd, r: sigRow2 - 1 } });
+
+      const signatureNameStyle = {
+        font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: '000000' } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      };
+      const signatureTitleStyle = {
+        font: { name: 'Calibri', sz: 10, bold: false, color: { rgb: '000000' } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      };
+
+      const rightSigCol = colLet(rightSigStart);
+      ws[`A${sigRow1}`] = { t: 's', v: (settings && settings.vicePrincipal) || 'Nebi DEMİR', s: signatureNameStyle };
+      ws[`${rightSigCol}${sigRow1}`] = { t: 's', v: (settings && settings.principal) || 'Hayrullah YILDIRIM', s: signatureNameStyle };
+      ws[`A${sigRow2}`] = { t: 's', v: (settings && settings.viceTitle) || 'Pansiyondan Sorumlu Müdür Yardımcısı', s: signatureTitleStyle };
+      ws[`${rightSigCol}${sigRow2}`] = { t: 's', v: (settings && settings.principalTitle) || 'Okul Müdürü', s: signatureTitleStyle };
+
+      ws['!merges'] = merges;
+      ws['!ref'] = `A1:${colLet(lastColIdx)}${sigRow2}`;
+
+      // Orijinal satır yükseklikleri (!rows)
+      ws['!rows'] = [];
+      ws['!rows'][0] = { hpt: 18, hpx: 18 };
+      ws['!rows'][7] = { hpt: 18.75, hpx: 18.75 };
+      for (let r = startRow - 1; r < endScheduleRow; r++) {
+        ws['!rows'][r] = { hpt: 17, hpx: 17 };
+      }
+
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.writeFile(wb, `${currentYear}_${mName.toUpperCase()}_NOBET_LISTESI.xlsx`);
+    } catch (err) {
+      console.error('Excel dışa aktarma hatası:', err);
+      alert('Excel dosyası oluşturulurken bir hata oluştu: ' + err.message);
+    }
+  });
+
+  btnPrint.addEventListener('click', () => {
+    if (!ensureExportRightCheck()) return;
+    modalPdfExport.classList.add('active');
+  });
+
+  // ================= DİĞER EVENT HANDLERLAR =================
+  function setupEventHandlers() {
+    // Toolbar Kilit Butonları
+    const btnLockAll = document.getElementById('btn-lock-all');
+    if (btnLockAll) {
+      btnLockAll.addEventListener('click', () => {
+        if (!ensureNotExpiredOrAlert()) return;
+        const activeRoles = [...getActiveColumnIds(), 'etut'];
+        scheduleDays.forEach(day => {
+          if (!day.locked) day.locked = {};
+          activeRoles.forEach(role => {
+            if (day[role]) day.locked[role] = true;
+          });
+        });
+        renderScheduleTable();
+        markAsUnsaved();
+        alert('Tüm dolu nöbetler kilitlendi 🔒. Otomatik dağıtım yapıldığında bu öğretmenler yerinde sabit kalacaktır.');
+      });
+    }
+
+    const btnUnlockAll = document.getElementById('btn-unlock-all');
+    if (btnUnlockAll) {
+      btnUnlockAll.addEventListener('click', () => {
+        if (!ensureNotExpiredOrAlert()) return;
+        if (confirm('Tüm kilitleri kaldırmak istediğinize emin misiniz?')) {
+          scheduleDays.forEach(day => {
+            day.locked = {
+              kiz1: false, kiz2: false, kiz3: false,
+              erkek1: false, erkek2: false, erkek3: false,
+              etut: false
+            };
+          });
+          renderScheduleTable();
+          markAsUnsaved();
+        }
+      });
+    }
+
+    // Toolbar Görünüm Checkbox'ları
+    if (chkViewEtut) {
+      chkViewEtut.addEventListener('change', syncViewToggles);
+    }
+    if (chkViewStats) {
+      chkViewStats.addEventListener('change', syncViewToggles);
+    }
+    // Ay & Yıl Değişimi - Veritabanından Yükle
+    selectMonth.addEventListener('change', () => {
+      const newMonth = parseInt(selectMonth.value, 10);
+      switchMonth(currentYear, newMonth);
+    });
+
+    selectYear.addEventListener('change', () => {
+      const newYear = parseInt(selectYear.value, 10);
+      switchMonth(newYear, currentMonth);
+    });
+
+    btnQuickDistribute.addEventListener('click', async () => {
+      const rightRes = await consumeScheduleRightOrAlert();
+      if (!rightRes) return;
+      runDistribution();
+      const remNote = (!rightRes.unlimited && typeof rightRes.remaining === 'number')
+        ? `\n(Kalan Yeni Nöbet Hazırlama Hakkınız: ${rightRes.remaining} / ${rightRes.limit})`
+        : '';
+      alert(`Nöbetler adil şekilde yeniden dağıtıldı!${remNote}`);
+    });
+
+    btnClearSchedule.addEventListener('click', () => {
+      if (!ensureNotExpiredOrAlert()) return;
+      if (confirm('Kilitli olmayan nöbet atamalarını temizlemek istediğinize emin misiniz?\n(Kilitli 🔒 nöbetler korunacaktır)')) {
+        let clearedCount = 0;
+        let preservedLockedCount = 0;
+        const activeRoles = [...getActiveColumnIds(), 'etut'];
+        scheduleDays.forEach(d => {
+          const locked = d.locked || {};
+          activeRoles.forEach(role => {
+            if (locked[role]) {
+              if (d[role]) preservedLockedCount++;
+            } else {
+              if (d[role]) {
+                d[role] = null;
+                clearedCount++;
+              }
+            }
+          });
+        });
+        renderScheduleTable();
+        renderStatsTables();
+        markAsUnsaved();
+        if (preservedLockedCount > 0) {
+          showToast('Nöbetler Temizlendi', `Kilitli olmayan nöbetler silindi. ${preservedLockedCount} adet kilitli (🔒) nöbet korundu.`, 'info');
+        } else {
+          showToast('Çizelge Temizlendi', 'Tüm nöbetler temizlendi.', 'info');
+        }
+      }
+    });
+
+    // Üst Bar Kaydet Butonu
+    if (btnSaveSchedule) {
+      btnSaveSchedule.addEventListener('click', handleManualSave);
+    }
+
+    // Son Kaydedilen Duruma Geri Dön Butonu
+    const btnRevertSchedule = document.getElementById('btn-revert-schedule');
+    if (btnRevertSchedule) {
+      btnRevertSchedule.addEventListener('click', revertToLastSaved);
+    }
+
+    // Ctrl+S / Cmd+S ve Ctrl+P yetki kontrolü
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        if (window.authManager && window.authManager.isLoggedIn()) {
+          handleManualSave();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+        if (!window.authManager || !window.authManager.isLoggedIn()) {
+          e.preventDefault();
+          return;
+        }
+        if (!window.authManager.canExport()) {
+          e.preventDefault();
+          ensureExportRightCheck();
+        } else if (!window.authManager.isAdmin()) {
+          e.preventDefault();
+          modalPdfExport.classList.add('active');
+        }
+      }
+    });
+
+    // Kaydedilmemiş değişiklik varken sayfadan çıkmaya çalışırsa kullanıcıyı uyar
+    window.addEventListener('beforeunload', (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'Kaydedilmemiş değişiklikleriniz var. Sayfayı kaydetmeden kapatırsanız son kaydettiğiniz hal geri yüklenecektir.';
+        return e.returnValue;
+      }
+    });
+
+    // Sekme Değişimi
+    navTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetId = tab.dataset.tab;
+        switchTab(targetId);
+      });
+    });
+
+    setupPuantajHandlers();
+  }
+
+  // ================= PUANTAJ (KENDİ OKULU) & DIŞ OKUL PUANTAJ MODÜLÜ =================
+  const DAY_SHORT_NAMES = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+
+  const puantajOwnNobetHoursEl = document.getElementById('puantaj-own-nobet-hours');
+  const puantajOwnEtutHoursEl = document.getElementById('puantaj-own-etut-hours');
+  const puantajOtherNobetHoursEl = document.getElementById('puantaj-other-nobet-hours');
+  const puantajOtherEtutHoursEl = document.getElementById('puantaj-other-etut-hours');
+  const chkPuantajOwnOnlyActive = document.getElementById('chk-puantaj-own-only-active');
+  const chkPuantajOtherOnlyActive = document.getElementById('chk-puantaj-other-only-active');
+  const selectPuantajOtherSchool = document.getElementById('select-puantaj-other-school');
+
+  const btnPuantajOwnPdf = document.getElementById('btn-puantaj-own-pdf');
+  const btnPuantajOwnExcel = document.getElementById('btn-puantaj-own-excel');
+  const btnPuantajOwnPrint = document.getElementById('btn-puantaj-own-print');
+  const btnPuantajOtherPdf = document.getElementById('btn-puantaj-other-pdf');
+  const btnPuantajOtherExcel = document.getElementById('btn-puantaj-other-excel');
+  const btnPuantajOtherPrint = document.getElementById('btn-puantaj-other-print');
+
+  function getTodayFormattedTR() {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    return `${dd}.${mm}.${now.getFullYear()}`;
+  }
+
+  function buildPuantajDataset(mode) {
+    const nobetHrs = Math.max(1, parseInt(settings.nobetHours, 10) || 8);
+    const etutHrs = Math.max(1, parseInt(settings.etutHours, 10) || 4);
+    const activeIds = getActiveColumnIds();
+
+    const days = (scheduleDays && scheduleDays.length > 0)
+      ? scheduleDays.map(d => window.dutyScheduler.migrateDayObject(d))
+      : window.dutyScheduler.generateMonthDays(currentYear, currentMonth, closedDates);
+
+    const onlyActive = mode === 'own'
+      ? !!(chkPuantajOwnOnlyActive && chkPuantajOwnOnlyActive.checked)
+      : !!(chkPuantajOtherOnlyActive && chkPuantajOtherOnlyActive.checked);
+
+    const selectedSchool = (mode === 'other' && selectPuantajOtherSchool)
+      ? selectPuantajOtherSchool.value
+      : '__ALL__';
+
+    const filteredTeachers = teachers
+      .map(normalizeTeacherRecord)
+      .filter(t => {
+        if (mode === 'own') return t.schoolType !== 'other';
+        if (t.schoolType !== 'other') return false;
+        if (selectedSchool && selectedSchool !== '__ALL__') {
+          return getTeacherDisplaySchool(t) === selectedSchool;
+        }
+        return true;
+      });
+
+    const dailyCounts = new Array(days.length).fill(0);
+    let totalDutyCount = 0;
+    let grandTotalHours = 0;
+    const rows = [];
+
+    filteredTeachers.forEach(t => {
+      const dayHours = new Array(days.length).fill(0);
+      let rowTotal = 0;
+
+      days.forEach((d, idx) => {
+        if (d.isClosed) return;
+        let h = 0;
+        for (let c = 0; c < activeIds.length; c++) {
+          if (d[activeIds[c]] === t.name) {
+            h += nobetHrs;
+          }
+        }
+        if (d.hasEtut && d.etut === t.name) {
+          h += etutHrs;
+        }
+        if (h > 0) {
+          dayHours[idx] = h;
+          rowTotal += h;
+        }
+      });
+
+      if (onlyActive && rowTotal === 0) return;
+
+      dayHours.forEach((h, idx) => {
+        if (h > 0) {
+          dailyCounts[idx]++;
+          totalDutyCount++;
+        }
+      });
+      grandTotalHours += rowTotal;
+
+      rows.push({
+        teacher: t,
+        schoolDisplay: getTeacherDisplaySchool(t),
+        dayHours,
+        totalHours: rowTotal
+      });
+    });
+
+    return {
+      mode,
+      days,
+      rows,
+      dailyCounts,
+      totalDutyCount,
+      grandTotalHours,
+      nobetHrs,
+      etutHrs,
+      selectedSchool
+    };
+  }
+
+  function refreshOtherSchoolFilterDropdown() {
+    if (!selectPuantajOtherSchool) return;
+    const prevVal = selectPuantajOtherSchool.value || '__ALL__';
+    const distinctSchools = [];
+    teachers.map(normalizeTeacherRecord).forEach(t => {
+      if (t.schoolType === 'other') {
+        const sName = getTeacherDisplaySchool(t);
+        if (sName && !distinctSchools.includes(sName)) {
+          distinctSchools.push(sName);
+        }
+      }
+    });
+    distinctSchools.sort((a, b) => a.localeCompare(b, 'tr'));
+
+    selectPuantajOtherSchool.innerHTML = '<option value="__ALL__">Tüm Dış Okullar</option>';
+    distinctSchools.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      selectPuantajOtherSchool.appendChild(opt);
+    });
+
+    if (prevVal === '__ALL__' || distinctSchools.includes(prevVal)) {
+      selectPuantajOtherSchool.value = prevVal;
+    } else {
+      selectPuantajOtherSchool.value = '__ALL__';
+    }
+  }
+
+  function renderSinglePuantaj(mode) {
+    const isOwn = mode === 'own';
+    const thead = document.getElementById(isOwn ? 'puantaj-own-thead' : 'puantaj-other-thead');
+    const tbody = document.getElementById(isOwn ? 'puantaj-own-tbody' : 'puantaj-other-tbody');
+    if (!thead || !tbody) return;
+
+    const ds = buildPuantajDataset(mode);
+    const mName = (window.dutyScheduler.monthNames[currentMonth] || '').toLocaleUpperCase('tr');
+    const todayStr = getTodayFormattedTR();
+    const districtVal = (settings.district && settings.district.trim())
+      ? settings.district.trim().toLocaleUpperCase('tr')
+      : '-';
+
+    const periodBadge = document.getElementById(isOwn ? 'puantaj-own-period-badge' : 'puantaj-other-period-badge');
+    if (periodBadge) {
+      periodBadge.textContent = isOwn
+        ? `📋 ${mName} ${currentYear} — Kendi Okulu Puantajı (${ds.rows.length} Öğretmen, ${ds.grandTotalHours} Saat)`
+        : `🏢 ${mName} ${currentYear} — Dış Okul Puantajı (${ds.rows.length} Öğretmen, ${ds.grandTotalHours} Saat)`;
+    }
+
+    if (isOwn) {
+      const elSchool = document.getElementById('po-school-name');
+      const elDist = document.getElementById('po-district');
+      const elMonth = document.getElementById('po-month-name');
+      const elYear = document.getElementById('po-year');
+      const elVice = document.getElementById('po-vice-name');
+      const elViceT = document.getElementById('po-vice-title');
+      const elToday = document.getElementById('po-today-date');
+      const elPrin = document.getElementById('po-principal-name');
+      const elPrinT = document.getElementById('po-principal-title');
+      if (elSchool) elSchool.textContent = (settings.schoolName || '').toLocaleUpperCase('tr');
+      if (elDist) elDist.textContent = districtVal;
+      if (elMonth) elMonth.textContent = mName;
+      if (elYear) elYear.textContent = String(currentYear);
+      if (elVice) elVice.textContent = settings.vicePrincipal || '';
+      if (elViceT) elViceT.textContent = settings.viceTitle || '';
+      if (elToday) elToday.textContent = todayStr;
+      if (elPrin) elPrin.textContent = settings.principal || '';
+      if (elPrinT) elPrinT.textContent = settings.principalTitle || '';
+    } else {
+      const elTarget = document.getElementById('px-target-school');
+      const elDist = document.getElementById('px-district');
+      const elMonth = document.getElementById('px-month-name');
+      const elYear = document.getElementById('px-year');
+      const elVice = document.getElementById('px-vice-name');
+      const elViceT = document.getElementById('px-vice-title');
+      const elToday = document.getElementById('px-today-date');
+      const elPrin = document.getElementById('px-principal-name');
+      const elPrinT = document.getElementById('px-principal-title');
+      if (elTarget) {
+        elTarget.textContent = (ds.selectedSchool && ds.selectedSchool !== '__ALL__')
+          ? `${ds.selectedSchool.toLocaleUpperCase('tr')} MÜDÜRLÜĞÜNE`
+          : 'İLGİLİ OKULA';
+      }
+      if (elDist) elDist.textContent = districtVal;
+      if (elMonth) elMonth.textContent = mName;
+      if (elYear) elYear.textContent = String(currentYear);
+      if (elVice) elVice.textContent = settings.vicePrincipal || '';
+      if (elViceT) elViceT.textContent = settings.viceTitle || '';
+      if (elToday) elToday.textContent = todayStr;
+      if (elPrin) elPrin.textContent = settings.principal || '';
+      if (elPrinT) elPrinT.textContent = settings.principalTitle || '';
+    }
+
+    // Başlık Satırları (Excel şablonundaki Satır 4 & Satır 5 ile birebir)
+    const dayNameHeaders = ds.days.map(d => {
+      const cls = d.isClosed ? 'pt-closed' : (d.isWeekend ? 'pt-wknd' : '');
+      return `<th class="pt-col-day pt-col-day-name ${cls}" title="${d.dayName}">${DAY_SHORT_NAMES[d.dayOfWeek]}</th>`;
+    }).join('');
+
+    const dayNumHeaders = ds.days.map(d => {
+      const cls = d.isClosed ? 'pt-closed' : (d.isWeekend ? 'pt-wknd' : '');
+      return `<th class="pt-col-day ${cls}">${String(d.dayNumber).padStart(2, '0')}</th>`;
+    }).join('');
+
+    thead.innerHTML = `
+      <tr>
+        <th rowspan="2" class="pt-col-no">Sıra No</th>
+        <th colspan="2">ÖĞRETMENİN</th>
+        ${dayNameHeaders}
+        <th rowspan="2" class="pt-col-total">TOPLAM SAAT SAYISI</th>
+      </tr>
+      <tr>
+        <th class="pt-col-name" style="text-align:center;">ADI VE SOYADI</th>
+        <th class="pt-col-school" style="text-align:center;">OKULU / KURUMU</th>
+        ${dayNumHeaders}
+      </tr>
+    `;
+
+    // Gövde Satırları
+    tbody.innerHTML = '';
+    if (ds.rows.length === 0) {
+      const emptyTr = document.createElement('tr');
+      const totalCols = 4 + ds.days.length;
+      const msg = isOwn
+        ? 'Kendi okulunuza ait öğretmen bulunamadı (veya bu ay nöbeti yok). "Öğretmen Kadrosu" sekmesinden öğretmen ekleyebilirsiniz.'
+        : 'Başka okuldan tanımlı öğretmen bulunamadı. "Öğretmen Kadrosu" sekmesinden "Başka Okul" seçeneğiyle öğretmen ekleyebilirsiniz.';
+      emptyTr.innerHTML = `<td colspan="${totalCols}" style="padding: 18px; color: #64748b; font-style: italic;">${msg}</td>`;
+      tbody.appendChild(emptyTr);
+    } else {
+      ds.rows.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+        const dayCells = ds.days.map((d, dIdx) => {
+          const h = row.dayHours[dIdx];
+          const cls = d.isClosed ? 'pt-closed' : (d.isWeekend ? 'pt-wknd' : '');
+          return `<td class="pt-col-day ${cls} ${h > 0 ? 'pt-hour-filled' : ''}">${h > 0 ? h : ''}</td>`;
+        }).join('');
+
+        tr.innerHTML = `
+          <td class="pt-col-no">${idx + 1}</td>
+          <td class="pt-col-name">${escapeHtml(row.teacher.name)}</td>
+          <td class="pt-col-school">${escapeHtml(row.schoolDisplay)}</td>
+          ${dayCells}
+          <td class="pt-col-total">${row.totalHours}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // GÜNLÜK GÖREV SAYISI Satırı (R56)
+    const dailyTr = document.createElement('tr');
+    dailyTr.className = 'pt-daily-row';
+    const dailyCells = ds.days.map((d, dIdx) => {
+      const cls = d.isClosed ? 'pt-closed' : (d.isWeekend ? 'pt-wknd' : '');
+      return `<td class="pt-col-day ${cls}">${ds.dailyCounts[dIdx]}</td>`;
+    }).join('');
+    dailyTr.innerHTML = `
+      <td></td>
+      <td colspan="2" style="text-align:right; padding-right:8px;">GÜNLÜK GÖREV SAYISI :</td>
+      ${dailyCells}
+      <td class="pt-col-total">${ds.totalDutyCount}</td>
+    `;
+    tbody.appendChild(dailyTr);
+
+    // GENEL TOPLAM Satırı (R57)
+    const grandTr = document.createElement('tr');
+    grandTr.className = 'pt-grand-row';
+    grandTr.innerHTML = `
+      <td colspan="${3 + ds.days.length}" style="text-align:right; padding-right:10px;">GENEL TOPLAM :</td>
+      <td class="pt-col-total">${ds.grandTotalHours}</td>
+    `;
+    tbody.appendChild(grandTr);
+
+    // Resmi MEB 39. Madde Alt Yazısı (A58)
+    const certEl = document.getElementById(isOwn ? 'puantaj-own-cert-text' : 'puantaj-other-cert-text');
+    if (certEl) {
+      certEl.innerHTML = `Yukarıda belirtilen görevlilerce MEB Bağlı Resmi Okullarda Yatılılık, Bursluluk, Sosyal Yardımlar ve Okul Pansiyonları Yönetmeliğinin 39. Madde gereğince belletici olarak görevlendirilen öğretmenler <strong>${mName}</strong> ayında toplam <strong>${ds.grandTotalHours}</strong> saat ek ders ücret karşılığı belleticilik görevi yapmışlardır.`;
+    }
+  }
+
+  function syncPuantajHoursInputs() {
+    const nHrs = Math.max(1, parseInt(settings.nobetHours, 10) || 8);
+    const eHrs = Math.max(1, parseInt(settings.etutHours, 10) || 4);
+    if (puantajOwnNobetHoursEl) puantajOwnNobetHoursEl.value = nHrs;
+    if (puantajOwnEtutHoursEl) puantajOwnEtutHoursEl.value = eHrs;
+    if (puantajOtherNobetHoursEl) puantajOtherNobetHoursEl.value = nHrs;
+    if (puantajOtherEtutHoursEl) puantajOtherEtutHoursEl.value = eHrs;
+  }
+
+  function renderPuantajTables() {
+    syncPuantajHoursInputs();
+    refreshOtherSchoolFilterDropdown();
+    renderSinglePuantaj('own');
+    renderSinglePuantaj('other');
+  }
+
+  async function exportPuantajPdf(mode) {
+    const rightRes = await consumeExportRightOrAlert();
+    if (!rightRes) return;
+
+    const isOwn = mode === 'own';
+    const paperEl = document.getElementById(isOwn ? 'printable-puantaj-own' : 'printable-puantaj-other');
+    const btnEl = isOwn ? btnPuantajOwnPdf : btnPuantajOtherPdf;
+    if (!paperEl) return;
+
+    renderSinglePuantaj(mode);
+
+    const mName = (window.dutyScheduler.monthNames[currentMonth] || 'AY').toLocaleUpperCase('tr');
+    let filename = isOwn
+      ? `${currentYear}_${mName}_PUANTAJ_KENDI_OKULU.pdf`
+      : `${currentYear}_${mName}_DIS_OKUL_PUANTAJ.pdf`;
+
+    if (!isOwn && selectPuantajOtherSchool && selectPuantajOtherSchool.value !== '__ALL__') {
+      const safeSchool = selectPuantajOtherSchool.value.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ]+/g, '_').slice(0, 35);
+      filename = `${currentYear}_${mName}_DIS_OKUL_PUANTAJ_${safeSchool}.pdf`;
+    }
+
+    paperEl.classList.add('puantaj-pdf-export');
+    const origHtml = btnEl ? btnEl.innerHTML : '';
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.textContent = '⏳ PDF Oluşturuluyor...';
+    }
+
+    const cleanup = () => {
+      paperEl.classList.remove('puantaj-pdf-export');
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.innerHTML = origHtml || '<span>📄</span> PDF Çıktı Al (A4 Yatay)';
+      }
+    };
+
+    exportElementToSinglePagePdf(paperEl, {
+      filename,
+      orientation: 'landscape',
+      marginMm: 4,
+      targetCssWidth: 1120,
+      scale: 2
+    }).then(() => {
+      cleanup();
+    }).catch(err => {
+      console.error('Puantaj PDF hatası:', err);
+      cleanup();
+      alert('Puantaj PDF oluşturulurken bir hata oluştu: ' + (err && err.message ? err.message : err));
+    });
+  }
+
+  async function printPuantaj(mode) {
+    const rightRes = await consumeExportRightOrAlert();
+    if (!rightRes) return;
+
+    renderSinglePuantaj(mode);
+    let styleEl = document.getElementById('temp-puantaj-landscape-print');
+    if (styleEl) styleEl.remove();
+    styleEl = document.createElement('style');
+    styleEl.id = 'temp-puantaj-landscape-print';
+    styleEl.textContent = '@media print { @page { size: A4 landscape; margin: 5mm; } }';
+    document.head.appendChild(styleEl);
+
+    window.print();
+    setTimeout(() => {
+      const s = document.getElementById('temp-puantaj-landscape-print');
+      if (s) s.remove();
+    }, 1000);
+  }
+
+  async function exportPuantajExcel(mode) {
+    const rightRes = await consumeExportRightOrAlert();
+    if (!rightRes) return;
+
+    try {
+      const isOwn = mode === 'own';
+      const ds = buildPuantajDataset(mode);
+      const wb = XLSX.utils.book_new();
+      const ws = {};
+      const colLet = (idx) => XLSX.utils.encode_col(idx);
+
+      const mName = (window.dutyScheduler.monthNames[currentMonth] || '').toLocaleUpperCase('tr');
+      const totalColIdx = 3 + ds.days.length; // A=0(Sıra), B=1(Ad), C=2(Okul), D..(3+N-1)(Günler), totalColIdx(Toplam)
+      const lastCol = colLet(totalColIdx);
+
+      const thinBorder = {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '000000' } },
+        right: { style: 'thin', color: { rgb: '000000' } }
+      };
+
+      const titleStyle = {
+        font: { name: 'Calibri', sz: 13, bold: true, color: { rgb: '000000' } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      };
+      const metaBold = {
+        font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '000000' } },
+        alignment: { horizontal: 'left', vertical: 'center' }
+      };
+      const headerStyle = {
+        font: { name: 'Calibri', sz: 9, bold: true, color: { rgb: '000000' } },
+        fill: { fgColor: { rgb: 'E2E8F0' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: thinBorder
+      };
+      const wkndHeaderStyle = {
+        font: { name: 'Calibri', sz: 9, bold: true, color: { rgb: '78350F' } },
+        fill: { fgColor: { rgb: 'FDE68A' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: thinBorder
+      };
+      const cellCenter = {
+        font: { name: 'Calibri', sz: 9, bold: false, color: { rgb: '000000' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: thinBorder
+      };
+      const cellWkndCenter = {
+        font: { name: 'Calibri', sz: 9, bold: true, color: { rgb: '000000' } },
+        fill: { fgColor: { rgb: 'FDE68A' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: thinBorder
+      };
+      const cellLeft = {
+        font: { name: 'Calibri', sz: 9, bold: false, color: { rgb: '000000' } },
+        alignment: { horizontal: 'left', vertical: 'center' },
+        border: thinBorder
+      };
+      const cellTotal = {
+        font: { name: 'Calibri', sz: 9, bold: true, color: { rgb: '000000' } },
+        fill: { fgColor: { rgb: 'F8FAFC' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: thinBorder
+      };
+
+      const merges = [
+        { s: { c: 0, r: 0 }, e: { c: totalColIdx, r: 0 } },
+        { s: { c: 0, r: 3 }, e: { c: 0, r: 4 } },
+        { s: { c: 1, r: 3 }, e: { c: 2, r: 3 } },
+        { s: { c: totalColIdx, r: 3 }, e: { c: totalColIdx, r: 4 } }
+      ];
+
+      ws['A1'] = { t: 's', v: 'BELLETİCİ ÖĞRETMEN EK DERS ÜCRETLERİ TAHAKKUK ÇİZELGESİ', s: titleStyle };
+
+      if (isOwn) {
+        ws['A2'] = { t: 's', v: 'OKULUN ADI :', s: metaBold };
+        ws['C2'] = { t: 's', v: (settings.schoolName || '').toLocaleUpperCase('tr'), s: metaBold };
+      } else {
+        const targetLabel = (ds.selectedSchool && ds.selectedSchool !== '__ALL__')
+          ? `${ds.selectedSchool.toLocaleUpperCase('tr')} MÜDÜRLÜĞÜNE`
+          : 'İLGİLİ OKULA';
+        ws['A2'] = { t: 's', v: targetLabel, s: metaBold };
+      }
+
+      ws['A3'] = { t: 's', v: 'İLÇESİ :', s: metaBold };
+      ws['C3'] = { t: 's', v: (settings.district || '').toLocaleUpperCase('tr'), s: metaBold };
+
+      const rightLabelCol = colLet(Math.max(5, totalColIdx - 5));
+      const rightValCol = colLet(Math.max(7, totalColIdx - 2));
+      ws[`${rightLabelCol}2`] = { t: 's', v: 'İLGİLİ AY :', s: metaBold };
+      ws[`${rightValCol}2`] = { t: 's', v: mName, s: metaBold };
+      ws[`${rightLabelCol}3`] = { t: 's', v: 'BÜTÇE YILI :', s: metaBold };
+      ws[`${rightValCol}3`] = { t: 'n', v: currentYear, s: metaBold };
+
+      // Satır 4 & 5 Başlıklar
+      ws['A4'] = { t: 's', v: 'Sıra No', s: headerStyle };
+      ws['A5'] = { t: 's', v: '', s: headerStyle };
+      ws['B4'] = { t: 's', v: 'ÖĞRETMENİN', s: headerStyle };
+      ws['C4'] = { t: 's', v: '', s: headerStyle };
+      ws['B5'] = { t: 's', v: 'ADI VE SOYADI', s: headerStyle };
+      ws['C5'] = { t: 's', v: 'OKULU / KURUMU', s: headerStyle };
+      ws[`${lastCol}4`] = { t: 's', v: 'TOPLAM SAAT SAYISI', s: headerStyle };
+      ws[`${lastCol}5`] = { t: 's', v: '', s: headerStyle };
+
+      ds.days.forEach((d, idx) => {
+        const cLet = colLet(3 + idx);
+        const hStyle = d.isWeekend ? wkndHeaderStyle : headerStyle;
+        ws[`${cLet}4`] = { t: 's', v: DAY_SHORT_NAMES[d.dayOfWeek], s: hStyle };
+        ws[`${cLet}5`] = { t: 'n', v: d.dayNumber, s: hStyle };
+      });
+
+      // Öğretmen Satırları (Satır 6+)
+      const firstDataRow = 6;
+      ds.rows.forEach((row, idx) => {
+        const r = firstDataRow + idx;
+        ws[`A${r}`] = { t: 'n', v: idx + 1, s: cellCenter };
+        ws[`B${r}`] = { t: 's', v: row.teacher.name, s: cellLeft };
+        ws[`C${r}`] = { t: 's', v: row.schoolDisplay, s: cellLeft };
+
+        ds.days.forEach((d, dIdx) => {
+          const cLet = colLet(3 + dIdx);
+          const h = row.dayHours[dIdx];
+          const st = d.isWeekend ? cellWkndCenter : cellCenter;
+          if (h > 0) {
+            ws[`${cLet}${r}`] = { t: 'n', v: h, s: st };
+          } else {
+            ws[`${cLet}${r}`] = { t: 's', v: '', s: st };
+          }
+        });
+
+        const endDayCol = colLet(3 + ds.days.length - 1);
+        ws[`${lastCol}${r}`] = {
+          t: 'n',
+          v: row.totalHours,
+          f: `SUM(D${r}:${endDayCol}${r})`,
+          s: cellTotal
+        };
+      });
+
+      const lastDataRow = firstDataRow + Math.max(ds.rows.length, 1) - 1;
+      const dailyRow = firstDataRow + ds.rows.length;
+      const grandRow = dailyRow + 1;
+      const certRow = grandRow + 1;
+      const sigTopRow = certRow + 2;
+      const sigNameRow = sigTopRow + 2;
+      const sigTitleRow = sigNameRow + 1;
+
+      // GÜNLÜK GÖREV SAYISI
+      merges.push({ s: { c: 1, r: dailyRow - 1 }, e: { c: 2, r: dailyRow - 1 } });
+      ws[`A${dailyRow}`] = { t: 's', v: '', s: headerStyle };
+      ws[`B${dailyRow}`] = { t: 's', v: 'GÜNLÜK GÖREV SAYISI :', s: headerStyle };
+      ws[`C${dailyRow}`] = { t: 's', v: '', s: headerStyle };
+      ds.days.forEach((d, dIdx) => {
+        const cLet = colLet(3 + dIdx);
+        ws[`${cLet}${dailyRow}`] = {
+          t: 'n',
+          v: ds.dailyCounts[dIdx],
+          f: ds.rows.length > 0 ? `COUNT(${cLet}${firstDataRow}:${cLet}${lastDataRow})` : undefined,
+          s: d.isWeekend ? wkndHeaderStyle : headerStyle
+        };
+      });
+      ws[`${lastCol}${dailyRow}`] = { t: 'n', v: ds.totalDutyCount, s: headerStyle };
+
+      // GENEL TOPLAM
+      merges.push({ s: { c: 0, r: grandRow - 1 }, e: { c: totalColIdx - 1, r: grandRow - 1 } });
+      ws[`A${grandRow}`] = { t: 's', v: 'GENEL TOPLAM :', s: wkndHeaderStyle };
+      ws[`${lastCol}${grandRow}`] = {
+        t: 'n',
+        v: ds.grandTotalHours,
+        f: ds.rows.length > 0 ? `SUM(${lastCol}${firstDataRow}:${lastCol}${lastDataRow})` : undefined,
+        s: wkndHeaderStyle
+      };
+
+      // Resmi 39. Madde Alt Yazı
+      merges.push({ s: { c: 0, r: certRow - 1 }, e: { c: totalColIdx, r: certRow - 1 } });
+      ws[`A${certRow}`] = {
+        t: 's',
+        v: `Yukarıda belirtilen görevlilerce MEB Bağlı Resmi Okullarda Yatılılık, Bursluluk, Sosyal Yardımlar ve Okul Pansiyonları Yönetmeliğinin 39. Madde gereğince belletici olarak görevlendirilen öğretmenler ${mName} ayında toplam ${ds.grandTotalHours} saat ek ders ücret karşılığı belleticilik görevi yapmışlardır.`,
+        s: { font: { name: 'Calibri', sz: 9.5, italic: false }, alignment: { horizontal: 'left', vertical: 'center', wrapText: true } }
+      };
+
+      // İmzalar
+      const sigCenter = { font: { name: 'Calibri', sz: 10, bold: true }, alignment: { horizontal: 'center', vertical: 'center' } };
+      const sigSub = { font: { name: 'Calibri', sz: 9.5, bold: false }, alignment: { horizontal: 'center', vertical: 'center' } };
+      const rightSigColIdx = Math.max(6, totalColIdx - 6);
+      merges.push({ s: { c: 1, r: sigTopRow - 1 }, e: { c: 4, r: sigTopRow - 1 } });
+      merges.push({ s: { c: 1, r: sigNameRow - 1 }, e: { c: 4, r: sigNameRow - 1 } });
+      merges.push({ s: { c: 1, r: sigTitleRow - 1 }, e: { c: 4, r: sigTitleRow - 1 } });
+      merges.push({ s: { c: rightSigColIdx, r: sigTopRow - 1 }, e: { c: totalColIdx, r: sigTopRow - 1 } });
+      merges.push({ s: { c: rightSigColIdx, r: sigNameRow - 1 }, e: { c: totalColIdx, r: sigNameRow - 1 } });
+      merges.push({ s: { c: rightSigColIdx, r: sigTitleRow - 1 }, e: { c: totalColIdx, r: sigTitleRow - 1 } });
+
+      const rSigLet = colLet(rightSigColIdx);
+      ws[`B${sigTopRow}`] = { t: 's', v: 'Düzenleyen', s: sigSub };
+      ws[`B${sigNameRow}`] = { t: 's', v: settings.vicePrincipal || '', s: sigCenter };
+      ws[`B${sigTitleRow}`] = { t: 's', v: settings.viceTitle || '', s: sigSub };
+
+      ws[`${rSigLet}${sigTopRow}`] = { t: 's', v: getTodayFormattedTR(), s: sigSub };
+      ws[`${rSigLet}${sigNameRow}`] = { t: 's', v: settings.principal || '', s: sigCenter };
+      ws[`${rSigLet}${sigTitleRow}`] = { t: 's', v: settings.principalTitle || '', s: sigSub };
+
+      const colsSpec = [{ wch: 6 }, { wch: 24 }, { wch: 28 }];
+      ds.days.forEach(() => colsSpec.push({ wch: 4.2 }));
+      colsSpec.push({ wch: 11 });
+      ws['!cols'] = colsSpec;
+      ws['!merges'] = merges;
+      ws['!ref'] = `A1:${lastCol}${sigTitleRow}`;
+
+      const sheetTitle = isOwn ? 'Puantaj' : 'Puantaj Diğer Okullar';
+      XLSX.utils.book_append_sheet(wb, ws, sheetTitle);
+      const fileName = isOwn
+        ? `${currentYear}_${mName}_PUANTAJ_KENDI_OKULU.xlsx`
+        : `${currentYear}_${mName}_DIS_OKUL_PUANTAJ.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    } catch (err) {
+      console.error('Puantaj Excel hatası:', err);
+      alert('Puantaj Excel dosyası oluşturulurken bir hata oluştu: ' + err.message);
+    }
+  }
+
+  function setupPuantajHandlers() {
+    const handleHoursInput = (inputEl, key) => {
+      if (!inputEl) return;
+      inputEl.addEventListener('change', () => {
+        if (!ensureNotExpiredOrAlert()) {
+          syncPuantajHoursInputs();
+          return;
+        }
+        const val = Math.max(1, Math.min(24, parseInt(inputEl.value, 10) || (key === 'nobetHours' ? 8 : 4)));
+        settings[key] = val;
+        applySettingsToUI();
+        renderPuantajTables();
+        saveToLocalStorage();
+      });
+    };
+
+    handleHoursInput(puantajOwnNobetHoursEl, 'nobetHours');
+    handleHoursInput(puantajOwnEtutHoursEl, 'etutHours');
+    handleHoursInput(puantajOtherNobetHoursEl, 'nobetHours');
+    handleHoursInput(puantajOtherEtutHoursEl, 'etutHours');
+
+    if (chkPuantajOwnOnlyActive) chkPuantajOwnOnlyActive.addEventListener('change', () => renderSinglePuantaj('own'));
+    if (chkPuantajOtherOnlyActive) chkPuantajOtherOnlyActive.addEventListener('change', () => renderSinglePuantaj('other'));
+    if (selectPuantajOtherSchool) selectPuantajOtherSchool.addEventListener('change', () => renderSinglePuantaj('other'));
+
+    if (btnPuantajOwnPdf) btnPuantajOwnPdf.addEventListener('click', () => exportPuantajPdf('own'));
+    if (btnPuantajOwnExcel) btnPuantajOwnExcel.addEventListener('click', () => exportPuantajExcel('own'));
+    if (btnPuantajOwnPrint) btnPuantajOwnPrint.addEventListener('click', () => printPuantaj('own'));
+
+    if (btnPuantajOtherPdf) btnPuantajOtherPdf.addEventListener('click', () => exportPuantajPdf('other'));
+    if (btnPuantajOtherExcel) btnPuantajOtherExcel.addEventListener('click', () => exportPuantajExcel('other'));
+    if (btnPuantajOtherPrint) btnPuantajOtherPrint.addEventListener('click', () => printPuantaj('other'));
+  }
+
+  function switchTab(targetId) {
+    if (targetId === 'tab-users' && (!window.authManager || !window.authManager.isAdmin())) {
+      showToast('Yetkisiz Erişim', 'Kullanıcı yönetimi yalnızca ana yönetici (nebi) tarafından kullanılabilir.', 'error');
+      return;
+    }
+    navTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === targetId));
+    tabPanes.forEach(p => p.classList.toggle('active', p.id === targetId));
+    if (targetId === 'tab-puantaj-own' || targetId === 'tab-puantaj-other') {
+      renderPuantajTables();
+    } else if (targetId === 'tab-users') {
+      renderUsersManagementTab();
+      if (window.authManager && window.authManager.isCloudMode()) {
+        window.authManager.refreshUsersAsync().then(() => renderUsersManagementTab());
+      }
+    }
+  }
+
+  // ================= KULLANICI GİRİŞİ, YETKİ KONTROLÜ VE KULLANICI YÖNETİMİ =================
+  const loginOverlay = document.getElementById('login-overlay');
+  const appRootEl = document.getElementById('app');
+  const loginForm = document.getElementById('login-form');
+  const loginUsernameInput = document.getElementById('login-username');
+  const loginPasswordInput = document.getElementById('login-password');
+  const btnToggleLoginPass = document.getElementById('btn-toggle-login-pass');
+  const btnLoginSubmit = document.getElementById('btn-login-submit');
+  const loginErrorBox = document.getElementById('login-error-box');
+  const loginCloudStatusEl = document.getElementById('login-cloud-status');
+
+  const cloudModeBadge = document.getElementById('cloud-mode-badge');
+  const btnSyncCloud = document.getElementById('btn-sync-cloud');
+  const sessionRoleBadge = document.getElementById('session-role-badge');
+  const sessionUserNameEl = document.getElementById('session-user-name');
+  const sessionRightsBadgesEl = document.getElementById('session-rights-badges');
+  const btnLogout = document.getElementById('btn-logout');
+  const navTabUsers = document.getElementById('nav-tab-users');
+  const expiredLockBanner = document.getElementById('expired-lock-banner');
+  const expiredLockText = document.getElementById('expired-lock-text');
+
+  function updateCloudStatusBadges() {
+    const isCloud = !!(window.authManager && window.authManager.isCloudMode());
+    if (loginCloudStatusEl) {
+      loginCloudStatusEl.className = `cloud-status-pill ${isCloud ? 'cloud-online' : 'cloud-local'}`;
+      loginCloudStatusEl.textContent = isCloud
+        ? '☁️ Merkezi Bulut Veritabanı Aktif (Kullanıcı Bazlı Ayrı Veri)'
+        : '💻 Yerel Mod (Çevrimdışı / Kullanıcı Bazlı Ayrı Veri)';
+    }
+    if (cloudModeBadge) {
+      cloudModeBadge.className = `cloud-mode-badge ${isCloud ? 'cloud-online' : 'cloud-local'}`;
+      cloudModeBadge.textContent = isCloud ? '☁️ Kişisel Bulut DB' : '💻 Yerel Mod';
+    }
+    if (btnSyncCloud) {
+      btnSyncCloud.style.display = isCloud ? 'inline-flex' : 'none';
+    }
+  }
+
+  const usersSummaryBar = document.getElementById('users-summary-bar');
+  const usersTableTbody = document.getElementById('users-table-tbody');
+  const btnAddUser = document.getElementById('btn-add-user');
+
+  const modalUserEdit = document.getElementById('modal-user-edit');
+  const userModalTitle = document.getElementById('user-modal-title');
+  const userEditForm = document.getElementById('user-edit-form');
+  const userInputId = document.getElementById('user-input-id');
+  const userInputUsername = document.getElementById('user-input-username');
+  const userInputDisplayName = document.getElementById('user-input-displayname');
+  const userInputPassword = document.getElementById('user-input-password');
+  const btnToggleUserPass = document.getElementById('btn-toggle-user-pass');
+  const userPasswordLabel = document.getElementById('user-password-label');
+  const userPasswordHint = document.getElementById('user-password-hint');
+  const userRightsEditorBox = document.getElementById('user-rights-editor-box');
+  const userScheduleMode = document.getElementById('user-schedule-mode');
+  const userScheduleLimitWrap = document.getElementById('user-schedule-limit-wrap');
+  const userScheduleLimit = document.getElementById('user-schedule-limit');
+  const userExportMode = document.getElementById('user-export-mode');
+  const userExportLimitWrap = document.getElementById('user-export-limit-wrap');
+  const userExportLimit = document.getElementById('user-export-limit');
+  const userExpiryMode = document.getElementById('user-expiry-mode');
+  const userExpiryDurationWrap = document.getElementById('user-expiry-duration-wrap');
+  const userExpiryAmount = document.getElementById('user-expiry-amount');
+  const userExpiryUnit = document.getElementById('user-expiry-unit');
+  const userExpiryDateWrap = document.getElementById('user-expiry-date-wrap');
+  const userExpiryDatetime = document.getElementById('user-expiry-datetime');
+  const userExpiryCurrentInfo = document.getElementById('user-expiry-current-info');
+  const userInputActive = document.getElementById('user-input-active');
+  const userAdminUnlimitedNote = document.getElementById('user-admin-unlimited-note');
+  const userFormError = document.getElementById('user-form-error');
+  const btnUserModalClose = document.getElementById('btn-user-modal-close');
+  const btnUserModalCancel = document.getElementById('btn-user-modal-cancel');
+
+  let wasSessionExpired = false;
+
+  function toDateTimeLocalValue(isoStr) {
+    const d = isoStr ? new Date(isoStr) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    if (isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  }
+
+  function ensureNotExpiredOrAlert() {
+    if (!window.authManager) return true;
+    if (!window.authManager.isLoggedIn()) return false;
+    const expStatus = window.authManager.getExpiryStatus();
+    if (!expStatus.expired) return true;
+    syncAuthUI();
+    const msg = `Yetki süreniz (${expStatus.formattedDate}) dolmuştur. Hiçbir şekilde değişiklik yapamazsınız. Süre uzatmak için ana yönetici (nebi) ile iletişime geçiniz.`;
+    showToast('Yetki Süresi Doldu ⛔', msg, 'error');
+    alert(msg);
+    return false;
+  }
+
+  function ensureScheduleRightCheck() {
+    if (!window.authManager) return true;
+    if (!ensureNotExpiredOrAlert()) return false;
+    const status = window.authManager.getRightStatus('schedule');
+    if (status.allowed) return true;
+    const msg = status.mode === 'limited'
+      ? `Yeni nöbet hazırlama hakkınız dolmuştur (${status.remaining} / ${status.limit}). Yeni hak için ana yönetici (nebi) ile iletişime geçin.`
+      : 'Yeni nöbet hazırlama yetkiniz bulunmamaktadır. Lütfen ana yönetici (nebi) ile iletişime geçin.';
+    showToast('Yetki / Hak Yetersiz', msg, 'error');
+    alert(msg);
+    return false;
+  }
+
+  async function consumeScheduleRightOrAlert() {
+    if (!window.authManager) return { ok: true, unlimited: true };
+    if (!ensureNotExpiredOrAlert()) return false;
+    const res = await window.authManager.consumeRightAsync('schedule');
+    if (!res.ok) {
+      syncAuthUI();
+      showToast('Yetki / Hak Yetersiz', res.error, 'error');
+      alert(res.error);
+      return false;
+    }
+    syncAuthUI();
+    return res;
+  }
+
+  function ensureExportRightCheck() {
+    if (!window.authManager) return true;
+    if (!ensureNotExpiredOrAlert()) return false;
+    const status = window.authManager.getRightStatus('export');
+    if (status.allowed) return true;
+    const msg = status.mode === 'limited'
+      ? `Çıktı alma (PDF / Excel / Yazdır) hakkınız dolmuştur (${status.remaining} / ${status.limit}). Yeni hak için ana yönetici (nebi) ile iletişime geçin.`
+      : 'Çıktı alma (PDF / Excel / Yazdır) yetkiniz bulunmamaktadır. Lütfen ana yönetici (nebi) ile iletişime geçin.';
+    showToast('Yetki / Hak Yetersiz', msg, 'error');
+    alert(msg);
+    return false;
+  }
+
+  async function consumeExportRightOrAlert() {
+    if (!window.authManager) return { ok: true, unlimited: true };
+    if (!ensureNotExpiredOrAlert()) return false;
+    const res = await window.authManager.consumeRightAsync('export');
+    if (!res.ok) {
+      syncAuthUI();
+      showToast('Yetki / Hak Yetersiz', res.error, 'error');
+      alert(res.error);
+      return false;
+    }
+    syncAuthUI();
+    return res;
+  }
+
+  function renderRightPillHtml(prefix, status) {
+    if (status.expired) {
+      return `<span class="right-pill pill-depleted">${prefix}: ⛔ Süresi Doldu</span>`;
+    }
+    if (status.mode === 'unlimited') {
+      return `<span class="right-pill pill-unlimited">${prefix}: ♾️ Sınırsız</span>`;
+    }
+    if (status.mode === 'limited') {
+      const cls = status.remaining > 0 ? 'pill-limited' : 'pill-depleted';
+      return `<span class="right-pill ${cls}">${prefix}: ${status.remaining}/${status.limit} Hak</span>`;
+    }
+    return `<span class="right-pill pill-none">${prefix}: 🚫 Kapalı</span>`;
+  }
+
+  function renderExpiryPillHtml(expStatus) {
+    if (expStatus.mode === 'unlimited') {
+      return '<span class="right-pill pill-unlimited">⏳ Süre: ♾️ Süresiz</span>';
+    }
+    if (expStatus.expired) {
+      return `<span class="right-pill pill-depleted" title="Bitiş: ${escapeHtml(expStatus.formattedDate)}">⛔ Süresi Doldu</span>`;
+    }
+    return `<span class="right-pill pill-limited" title="Bitiş: ${escapeHtml(expStatus.formattedDate)}">⏳ Kalan: ${escapeHtml(expStatus.remainingLabel)}</span>`;
+  }
+
+  function syncAuthUI() {
+    if (!window.authManager) return;
+    const user = window.authManager.getCurrentUser();
+
+    if (!user) {
+      wasSessionExpired = false;
+      if (loginOverlay) loginOverlay.classList.remove('hidden');
+      if (appRootEl) {
+        appRootEl.classList.add('app-locked');
+        appRootEl.classList.remove('app-readonly-expired');
+      }
+      if (expiredLockBanner) expiredLockBanner.style.display = 'none';
+      if (loginPasswordInput) loginPasswordInput.value = '';
+      if (loginUsernameInput) {
+        setTimeout(() => loginUsernameInput.focus(), 50);
+      }
+      return;
+    }
+
+    if (loginOverlay) loginOverlay.classList.add('hidden');
+    if (appRootEl) appRootEl.classList.remove('app-locked');
+
+    const isAdmin = window.authManager.isAdmin(user);
+    const expStatus = window.authManager.getExpiryStatus(user);
+    const isExpired = !isAdmin && expStatus.expired;
+    const schedStatus = window.authManager.getRightStatus('schedule', user);
+    const exportStatus = window.authManager.getRightStatus('export', user);
+
+    if (appRootEl) {
+      appRootEl.classList.toggle('app-readonly-expired', isExpired);
+    }
+
+    if (expiredLockBanner && expiredLockText) {
+      if (isExpired) {
+        expiredLockText.textContent = `Yetki süreniz ${expStatus.formattedDate} tarihinde dolmuştur. Hiçbir şekilde değişiklik yapamazsınız (salt okunur mod). Süre uzatmak için ana yönetici (nebi) ile iletişime geçiniz.`;
+        expiredLockBanner.style.display = 'flex';
+      } else {
+        expiredLockBanner.style.display = 'none';
+      }
+    }
+
+    // Süre oturum açıkken yeni dolduysa açık düzenleme modallarını anında kapat ve uyar
+    if (isExpired) {
+      document.querySelectorAll('.modal-backdrop.active').forEach(m => m.classList.remove('active'));
+      if (!wasSessionExpired) {
+        showToast('Yetki Süreniz Doldu ⛔', 'Artık hiçbir değişiklik yapamazsınız (salt okunur mod).', 'error');
+      }
+    }
+    wasSessionExpired = isExpired;
+
+    // Ayarlar formundaki inputları süresi dolan kullanıcı için kilitle
+    if (settingsForm) {
+      settingsForm.querySelectorAll('input, textarea, select').forEach(el => {
+        el.disabled = isExpired;
+      });
+    }
+
+    if (sessionRoleBadge) {
+      sessionRoleBadge.textContent = isAdmin ? '👑 Ana Yönetici' : (isExpired ? '⛔ Süresi Doldu' : '👤 Kullanıcı');
+      sessionRoleBadge.classList.toggle('role-user', !isAdmin);
+    }
+
+    if (sessionUserNameEl) {
+      sessionUserNameEl.textContent = user.displayName && user.displayName !== user.username
+        ? `${user.displayName} (${user.username})`
+        : user.username;
+    }
+
+    if (sessionRightsBadgesEl) {
+      if (isAdmin) {
+        sessionRightsBadgesEl.innerHTML = '<span class="right-pill pill-unlimited">♾️ Sınırsız &amp; Süresiz Yetki</span>';
+      } else {
+        sessionRightsBadgesEl.innerHTML =
+          renderExpiryPillHtml(expStatus) +
+          renderRightPillHtml('✨ Yeni Nöbet', schedStatus) +
+          renderRightPillHtml('📄 Çıktı', exportStatus);
+      }
+    }
+
+    // Kullanıcı Yönetimi sekmesi sadece ana yönetici (nebi) için görünür
+    if (navTabUsers) {
+      navTabUsers.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+    const usersTabPane = document.getElementById('tab-users');
+    if (!isAdmin && usersTabPane && usersTabPane.classList.contains('active')) {
+      switchTab('tab-schedule');
+    }
+
+    // Yetkisiz veya süresi dolmuş butonlarda görsel belirtme
+    const schedButtons = [btnOpenWizard, btnQuickDistribute, btnColumnsModalApplyRedistribute];
+    schedButtons.forEach(btn => {
+      if (!btn) return;
+      btn.classList.toggle('btn-no-right', isExpired || !schedStatus.allowed);
+    });
+
+    const exportButtons = [
+      btnExportPdf, btnExportExcel, btnPrint,
+      btnPuantajOwnPdf, btnPuantajOwnExcel, btnPuantajOwnPrint,
+      btnPuantajOtherPdf, btnPuantajOtherExcel, btnPuantajOtherPrint
+    ];
+    exportButtons.forEach(btn => {
+      if (!btn) return;
+      btn.classList.toggle('btn-no-right', isExpired || !exportStatus.allowed);
+    });
+
+    if (isAdmin && usersTabPane && usersTabPane.classList.contains('active')) {
+      renderUsersManagementTab();
+    }
+  }
+
+  function renderUsersManagementTab() {
+    if (!window.authManager || !window.authManager.isAdmin() || !usersTableTbody) return;
+    const users = window.authManager.getUsers();
+
+    if (usersSummaryBar) {
+      const total = users.length;
+      const activeCount = users.filter(u => u.active).length;
+      const expiredCount = users.filter(u => u.role !== 'admin' && window.authManager.isExpired(u)).length;
+      usersSummaryBar.innerHTML = `
+        <div class="user-summary-chip">👥 Toplam Kullanıcı: <strong>${total}</strong></div>
+        <div class="user-summary-chip">✅ Aktif Hesap: <strong>${activeCount}</strong></div>
+        <div class="user-summary-chip">⛔ Süresi Dolan: <strong>${expiredCount}</strong></div>
+        <div class="user-summary-chip">👑 Ana Yönetici: <strong>nebi (Sınırsız &amp; Süresiz)</strong></div>
+      `;
+    }
+
+    usersTableTbody.innerHTML = '';
+    users.forEach(u => {
+      const isMainAdmin = u.role === 'admin' || u.username.toLowerCase() === 'nebi';
+      const schedStatus = window.authManager.getRightStatus('schedule', u);
+      const exportStatus = window.authManager.getRightStatus('export', u);
+      const expStatus = window.authManager.getExpiryStatus(u);
+
+      const tr = document.createElement('tr');
+      if (!u.active || expStatus.expired) tr.classList.add('user-row-inactive');
+
+      const schedExtra = (!isMainAdmin && schedStatus.mode === 'limited')
+        ? `<div style="font-size:0.72rem; color:#64748b; margin-top:3px;">Kullanılan: ${schedStatus.used} / Toplam: ${schedStatus.limit}</div>`
+        : '';
+      const exportExtra = (!isMainAdmin && exportStatus.mode === 'limited')
+        ? `<div style="font-size:0.72rem; color:#64748b; margin-top:3px;">Kullanılan: ${exportStatus.used} / Toplam: ${exportStatus.limit}</div>`
+        : '';
+      const expiryExtra = (!isMainAdmin && expStatus.mode === 'limited' && expStatus.formattedDate)
+        ? `<div style="font-size:0.72rem; color:#64748b; margin-top:3px;">Bitiş: ${escapeHtml(expStatus.formattedDate)}</div>`
+        : '';
+
+      const actionsHtml = isMainAdmin
+        ? `<div class="user-actions-group">
+             <button type="button" class="btn btn-secondary btn-sm btn-edit-user">✏️ Düzenle</button>
+           </div>`
+        : `<div class="user-actions-group">
+             <button type="button" class="btn btn-secondary btn-sm btn-edit-user">✏️ Yetki / Süre</button>
+             <button type="button" class="btn btn-accent btn-sm btn-reset-usage" title="Kullanılmış hak sayaçlarını sıfırla">🔄 Yenile</button>
+             <button type="button" class="btn btn-outline-danger btn-sm btn-delete-user" title="Kullanıcıyı sil">🗑️</button>
+           </div>`;
+
+      tr.innerHTML = `
+        <td>
+          <div class="user-cell-name">${escapeHtml(u.displayName || u.username)}</div>
+          <div class="user-cell-username">@${escapeHtml(u.username)}</div>
+        </td>
+        <td>
+          ${isMainAdmin
+            ? '<span class="session-role-badge">👑 Ana Yönetici</span>'
+            : '<span class="session-role-badge role-user">👤 Kullanıcı</span>'}
+          <div style="margin-top:4px;">
+            ${u.active
+              ? '<span style="color:#16a34a; font-size:0.76rem; font-weight:700;">● Aktif</span>'
+              : '<span style="color:#dc2626; font-size:0.76rem; font-weight:700;">● Pasif</span>'}
+          </div>
+        </td>
+        <td>
+          ${renderRightPillHtml('Nöbet', schedStatus)}
+          ${schedExtra}
+        </td>
+        <td>
+          ${renderRightPillHtml('Çıktı', exportStatus)}
+          ${exportExtra}
+        </td>
+        <td>
+          ${renderExpiryPillHtml(expStatus)}
+          ${expiryExtra}
+        </td>
+        <td>${actionsHtml}</td>
+      `;
+
+      const editBtn = tr.querySelector('.btn-edit-user');
+      if (editBtn) {
+        editBtn.addEventListener('click', () => openUserModal(u));
+      }
+
+      const resetBtn = tr.querySelector('.btn-reset-usage');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', async () => {
+          if (confirm(`"${u.username}" kullanıcısının harcanmış nöbet ve çıktı hak sayaçlarını sıfırlamak istiyor musunuz?`)) {
+            resetBtn.disabled = true;
+            try {
+              const res = await window.authManager.resetUserUsageAsync(u.id);
+              if (res.ok) {
+                renderUsersManagementTab();
+                showToast('Haklar Yenilendi', `"${u.username}" kullanıcısının kullanım sayaçları sıfırlandı.`, 'success');
+              } else {
+                alert(res.error || 'Haklar yenilenemedi.');
+              }
+            } finally {
+              resetBtn.disabled = false;
+            }
+          }
+        });
+      }
+
+      const deleteBtn = tr.querySelector('.btn-delete-user');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+          if (confirm(`"${u.username}" kullanıcısını kalıcı olarak silmek istediğinize emin misiniz?`)) {
+            deleteBtn.disabled = true;
+            try {
+              const res = await window.authManager.deleteUserAsync(u.id);
+              if (res.ok) {
+                renderUsersManagementTab();
+                showToast('Kullanıcı Silindi', `"${u.username}" hesabı kaldırıldı.`, 'info');
+              } else {
+                alert(res.error);
+              }
+            } finally {
+              deleteBtn.disabled = false;
+            }
+          }
+        });
+      }
+
+      usersTableTbody.appendChild(tr);
+    });
+  }
+
+  function syncUserModalLimitVisibility() {
+    if (userScheduleLimitWrap && userScheduleMode) {
+      userScheduleLimitWrap.style.display = userScheduleMode.value === 'limited' ? 'inline-flex' : 'none';
+    }
+    if (userExportLimitWrap && userExportMode) {
+      userExportLimitWrap.style.display = userExportMode.value === 'limited' ? 'inline-flex' : 'none';
+    }
+    if (userExpiryMode) {
+      if (userExpiryDurationWrap) {
+        userExpiryDurationWrap.style.display = userExpiryMode.value === 'duration' ? 'flex' : 'none';
+      }
+      if (userExpiryDateWrap) {
+        userExpiryDateWrap.style.display = userExpiryMode.value === 'until_date' ? 'flex' : 'none';
+      }
+    }
+  }
+
+  function openUserModal(userToEdit = null) {
+    if (!window.authManager || !window.authManager.isAdmin() || !modalUserEdit) return;
+    if (userFormError) {
+      userFormError.style.display = 'none';
+      userFormError.textContent = '';
+    }
+
+    const isEdit = !!userToEdit;
+    const isMainAdmin = isEdit && (userToEdit.role === 'admin' || userToEdit.username.toLowerCase() === 'nebi');
+
+    if (userModalTitle) {
+      userModalTitle.textContent = isEdit ? `✏️ Kullanıcı Düzenle (${userToEdit.username})` : '➕ Yeni Kullanıcı Tanımla';
+    }
+
+    userInputId.value = isEdit ? userToEdit.id : '';
+    userInputUsername.value = isEdit ? userToEdit.username : '';
+    userInputUsername.readOnly = isMainAdmin;
+    userInputDisplayName.value = isEdit ? (userToEdit.displayName || '') : '';
+    userInputPassword.value = '';
+    userInputPassword.type = 'password';
+    userInputPassword.required = !isEdit;
+
+    if (userPasswordLabel) {
+      userPasswordLabel.textContent = isEdit ? 'Yeni Şifre (İsteğe Bağlı):' : 'Şifre:';
+    }
+    if (userPasswordHint) {
+      userPasswordHint.style.display = isEdit ? 'block' : 'none';
+    }
+
+    if (userRightsEditorBox) {
+      userRightsEditorBox.style.display = isMainAdmin ? 'none' : 'block';
+    }
+    if (userAdminUnlimitedNote) {
+      userAdminUnlimitedNote.style.display = isMainAdmin ? 'block' : 'none';
+    }
+
+    if (!isMainAdmin) {
+      const sRight = (isEdit && userToEdit.scheduleRight) || { mode: 'limited', limit: 5, used: 0 };
+      const eRight = (isEdit && userToEdit.exportRight) || { mode: 'limited', limit: 5, used: 0 };
+      const expStatus = isEdit ? window.authManager.getExpiryStatus(userToEdit) : { mode: 'unlimited', expired: false, expiresAt: null };
+
+      userScheduleMode.value = sRight.mode || 'limited';
+      userScheduleLimit.value = sRight.limit > 0 ? sRight.limit : 5;
+      userExportMode.value = eRight.mode || 'limited';
+      userExportLimit.value = eRight.limit > 0 ? eRight.limit : 5;
+      userInputActive.checked = isEdit ? userToEdit.active !== false : true;
+
+      if (userExpiryMode) {
+        if (expStatus.mode === 'limited' && expStatus.expiresAt) {
+          userExpiryMode.value = 'until_date';
+          if (userExpiryDatetime) userExpiryDatetime.value = toDateTimeLocalValue(expStatus.expiresAt);
+          if (userExpiryCurrentInfo) {
+            userExpiryCurrentInfo.style.display = 'block';
+            userExpiryCurrentInfo.textContent = expStatus.expired
+              ? `⛔ Mevcut süre doldu (Bitiş: ${expStatus.formattedDate}). Uzatmak için yeni süre veya tarih seçin.`
+              : `⏳ Mevcut Bitiş: ${expStatus.formattedDate} (Kalan: ${expStatus.remainingLabel})`;
+          }
+        } else {
+          userExpiryMode.value = 'unlimited';
+          if (userExpiryDatetime) userExpiryDatetime.value = toDateTimeLocalValue(null);
+          if (userExpiryAmount) userExpiryAmount.value = 7;
+          if (userExpiryUnit) userExpiryUnit.value = 'days';
+          if (userExpiryCurrentInfo) userExpiryCurrentInfo.style.display = 'none';
+        }
+      }
+
+      syncUserModalLimitVisibility();
+    }
+
+    modalUserEdit.classList.add('active');
+  }
+
+  function closeUserModal() {
+    if (modalUserEdit) modalUserEdit.classList.remove('active');
+  }
+
+  async function setupAuthAndUserManagement() {
+    if (btnToggleLoginPass && loginPasswordInput) {
+      btnToggleLoginPass.addEventListener('click', () => {
+        loginPasswordInput.type = loginPasswordInput.type === 'password' ? 'text' : 'password';
+      });
+    }
+
+    if (btnToggleUserPass && userInputPassword) {
+      btnToggleUserPass.addEventListener('click', () => {
+        userInputPassword.type = userInputPassword.type === 'password' ? 'text' : 'password';
+      });
+    }
+
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (loginErrorBox) loginErrorBox.style.display = 'none';
+
+        if (btnLoginSubmit) {
+          btnLoginSubmit.disabled = true;
+          btnLoginSubmit.textContent = '⏳ Giriş yapılıyor...';
+        }
+
+        try {
+          const res = await window.authManager.loginAsync(loginUsernameInput.value, loginPasswordInput.value);
+          if (!res.ok) {
+            if (loginErrorBox) {
+              loginErrorBox.textContent = '⚠️ ' + res.error;
+              loginErrorBox.style.display = 'block';
+            }
+            loginPasswordInput.select();
+            return;
+          }
+
+          loginPasswordInput.value = '';
+          wasSessionExpired = !!(res.expiryStatus && res.expiryStatus.expired);
+          updateCloudStatusBadges();
+          syncAuthUI();
+          switchTab('tab-schedule');
+          await loadActiveUserWorkspaceAsync(true);
+
+          if (res.expiryStatus && res.expiryStatus.expired) {
+            showToast('Yetki Süreniz Dolmuş ⛔', `Giriş yapıldı ancak yetki süreniz (${res.expiryStatus.formattedDate}) dolduğu için salt okunur moddasınız.`, 'error');
+          } else {
+            showToast('Hoş Geldiniz! 👋', `${res.user.displayName || res.user.username} olarak giriş yapıldı.`, 'success');
+          }
+        } finally {
+          if (btnLoginSubmit) {
+            btnLoginSubmit.disabled = false;
+            btnLoginSubmit.textContent = '🔐 Giriş Yap';
+          }
+        }
+      });
+    }
+
+    if (btnSyncCloud) {
+      btnSyncCloud.addEventListener('click', async () => {
+        if (!window.authManager || !window.authManager.isCloudMode()) return;
+        btnSyncCloud.disabled = true;
+        btnSyncCloud.textContent = '⏳ ...';
+        try {
+          await window.authManager.refreshSessionAsync();
+          if (window.authManager.isAdmin()) {
+            await window.authManager.refreshUsersAsync();
+          }
+          syncAuthUI();
+          if (window.authManager.isLoggedIn()) {
+            await syncFromCloudAsync(false);
+          }
+        } finally {
+          btnSyncCloud.disabled = false;
+          btnSyncCloud.textContent = '☁️ Yenile';
+        }
+      });
+    }
+
+    if (btnLogout) {
+      btnLogout.addEventListener('click', async () => {
+        if (hasUnsavedChanges && !(window.authManager && window.authManager.isExpired())) {
+          if (!confirm('Kaydedilmemiş değişiklikleriniz var. Çıkış yapmak istediğinize emin misiniz?')) {
+            return;
+          }
+        }
+        await window.authManager.logoutAsync();
+        resetInMemoryWorkspaceState(false);
+        renderFullWorkspaceUI();
+        document.querySelectorAll('.modal-backdrop.active').forEach(m => m.classList.remove('active'));
+        syncAuthUI();
+      });
+    }
+
+    if (btnAddUser) btnAddUser.addEventListener('click', () => openUserModal(null));
+    if (btnUserModalClose) btnUserModalClose.addEventListener('click', closeUserModal);
+    if (btnUserModalCancel) btnUserModalCancel.addEventListener('click', closeUserModal);
+    if (userScheduleMode) userScheduleMode.addEventListener('change', syncUserModalLimitVisibility);
+    if (userExportMode) userExportMode.addEventListener('change', syncUserModalLimitVisibility);
+    if (userExpiryMode) userExpiryMode.addEventListener('change', syncUserModalLimitVisibility);
+
+    if (userEditForm) {
+      userEditForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (userFormError) userFormError.style.display = 'none';
+
+        const editId = userInputId.value.trim();
+        const existingUser = editId ? window.authManager.getUsers().find(u => u.id === editId) : null;
+
+        // Yetki süresi hesaplama
+        let accessExpiry = { mode: 'unlimited', expiresAt: null };
+        if (userExpiryMode && userExpiryMode.value === 'duration') {
+          const amount = parseInt(userExpiryAmount ? userExpiryAmount.value : '1', 10);
+          const unit = userExpiryUnit ? userExpiryUnit.value : 'days';
+          if (!amount || amount < 1) {
+            if (userFormError) {
+              userFormError.textContent = '⚠️ Geçerli bir süre değeri girin (en az 1).';
+              userFormError.style.display = 'block';
+            }
+            return;
+          }
+          const unitMs = unit === 'minutes' ? 60 * 1000 : (unit === 'hours' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000);
+          accessExpiry = {
+            mode: 'limited',
+            expiresAt: new Date(window.authManager.getNowMs() + amount * unitMs).toISOString()
+          };
+        } else if (userExpiryMode && userExpiryMode.value === 'until_date') {
+          const rawDt = userExpiryDatetime ? userExpiryDatetime.value : '';
+          const parsedDt = rawDt ? new Date(rawDt) : null;
+          if (!parsedDt || isNaN(parsedDt.getTime())) {
+            if (userFormError) {
+              userFormError.textContent = '⚠️ Lütfen geçerli bir bitiş tarih ve saati seçin.';
+              userFormError.style.display = 'block';
+            }
+            return;
+          }
+          accessExpiry = {
+            mode: 'limited',
+            expiresAt: parsedDt.toISOString()
+          };
+        }
+
+        const payload = {
+          username: userInputUsername.value.trim(),
+          displayName: userInputDisplayName.value.trim(),
+          password: userInputPassword.value,
+          active: userInputActive.checked,
+          scheduleRight: {
+            mode: userScheduleMode.value,
+            limit: userScheduleMode.value === 'limited' ? Math.max(1, parseInt(userScheduleLimit.value, 10) || 1) : 0,
+            used: (existingUser && existingUser.scheduleRight) ? (existingUser.scheduleRight.used || 0) : 0
+          },
+          exportRight: {
+            mode: userExportMode.value,
+            limit: userExportMode.value === 'limited' ? Math.max(1, parseInt(userExportLimit.value, 10) || 1) : 0,
+            used: (existingUser && existingUser.exportRight) ? (existingUser.exportRight.used || 0) : 0
+          },
+          accessExpiry
+        };
+
+        const submitBtn = userEditForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = '⏳ Kaydediliyor...';
+        }
+
+        try {
+          const res = editId
+            ? await window.authManager.updateUserAsync(editId, payload)
+            : await window.authManager.createUserAsync(payload);
+
+          if (!res.ok) {
+            if (userFormError) {
+              userFormError.textContent = '⚠️ ' + res.error;
+              userFormError.style.display = 'block';
+            }
+            return;
+          }
+
+          closeUserModal();
+          renderUsersManagementTab();
+          syncAuthUI();
+          showToast(
+            editId ? 'Kullanıcı Güncellendi' : 'Yeni Kullanıcı Tanımlandı',
+            window.authManager.isCloudMode()
+              ? `"${res.user.username}" bulut veritabanına kaydedildi — artık tüm cihazlardan giriş yapabilir.`
+              : `"${res.user.username}" hesabının yetki ve süre ayarları kaydedildi.`,
+            'success'
+          );
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '💾 Kullanıcıyı Kaydet';
+          }
+        }
+      });
+    }
+
+    // Başlangıçta bulut sunucusunu (/api/health) algıla ve oturumu kontrol et
+    await window.authManager.init();
+    updateCloudStatusBadges();
+    syncAuthUI();
+    if (window.authManager.isLoggedIn()) {
+      await loadActiveUserWorkspaceAsync(true);
+    }
+
+    // Canlı süre ve bulut yetki takip zamanlayıcısı (her 20 saniyede bir sunucu/süre durumunu günceller)
+    setInterval(async () => {
+      if (window.authManager && window.authManager.isLoggedIn()) {
+        if (window.authManager.isCloudMode()) {
+          await window.authManager.refreshSessionAsync();
+        }
+        syncAuthUI();
+      }
+    }, 20000);
+  }
+
+  // Başlat
+  initApp();
+  setupAuthAndUserManagement();
+})();
