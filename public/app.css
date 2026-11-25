@@ -2473,9 +2473,421 @@ body {
 .app-readonly-expired #settings-form button[type="submit"],
 .app-readonly-expired #btn-reset-defaults,
 .app-readonly-expired .btn-toggle-active,
+.app-readonly-expired .btn-edit-teacher,
 .app-readonly-expired .btn-delete-teacher {
   opacity: 0.48 !important;
   filter: grayscale(50%);
+}
+
+/* ================= OKUL SEÇENEĞİ (KENDİ OKULU / BAŞKA OKUL) ================= */
+.school-type-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.school-type-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 10px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  transition: all 0.15s ease;
+}
+
+.school-type-option:has(input:checked) {
+  border-color: var(--primary);
+  background: #eff6ff;
+  color: var(--primary);
+  box-shadow: 0 1px 4px rgba(30, 64, 175, 0.15);
+}
+
+.school-type-option input[type="radio"] {
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.mini-badge.school-own {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.mini-badge.school-other {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #d8b4fe;
+}
+
+/* ================= RESMİ MEB PUANTAJ & DIŞ OKUL PUANTAJ SAYFALARI ================= */
+.puantaj-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.puantaj-period-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.puantaj-other-badge {
+  background: #faf5ff;
+  color: #6b21a8;
+  border-color: #d8b4fe;
+}
+
+.puantaj-hours-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.puantaj-hours-inline label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.puantaj-hours-inline input {
+  width: 56px;
+  padding: 4px 6px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.84rem;
+}
+
+.puantaj-school-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.puantaj-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.puantaj-paper {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow-md);
+  color: #0f172a;
+}
+
+.puantaj-official-title {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #000000;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #1e293b;
+  margin-bottom: 10px;
+}
+
+.puantaj-meta-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.puantaj-meta-left .pm-label,
+.puantaj-meta-right .pm-label {
+  display: inline-block;
+  min-width: 105px;
+  color: #475569;
+  font-weight: 700;
+}
+
+.puantaj-meta-right {
+  text-align: right;
+}
+
+.puantaj-meta-right .pm-label {
+  min-width: auto;
+  margin-right: 6px;
+}
+
+.pm-related-school {
+  font-size: 0.92rem;
+  color: #0f172a;
+  letter-spacing: 0.4px;
+}
+
+.puantaj-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.puantaj-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+  text-align: center;
+  background: #ffffff;
+}
+
+.puantaj-table th,
+.puantaj-table td {
+  border: 1px solid #475569;
+  padding: 3px 2px;
+  line-height: 1.2;
+}
+
+.puantaj-table thead th {
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.puantaj-table .pt-col-no {
+  width: 30px;
+}
+
+.puantaj-table .pt-col-name {
+  min-width: 145px;
+  text-align: left;
+  padding-left: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.puantaj-table .pt-col-school {
+  min-width: 155px;
+  text-align: left;
+  padding-left: 6px;
+  font-size: 0.7rem;
+  color: #334155;
+}
+
+.puantaj-table .pt-col-day {
+  width: 24px;
+  min-width: 22px;
+  font-size: 0.68rem;
+}
+
+.puantaj-table .pt-col-day-name {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 3px 1px;
+}
+
+.puantaj-table .pt-col-total {
+  width: 54px;
+  font-weight: 800;
+  background: #f8fafc;
+}
+
+.puantaj-table .pt-wknd {
+  background-color: #fde68a !important;
+  color: #78350f;
+}
+
+.puantaj-table .pt-closed {
+  background-color: #e2e8f0 !important;
+  color: #64748b;
+}
+
+.puantaj-table td.pt-hour-filled {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.puantaj-table tr.pt-daily-row td {
+  background: #f1f5f9;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.puantaj-table tr.pt-grand-row td {
+  background: #fef3c7;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #0f172a;
+}
+
+.puantaj-cert-text {
+  margin-top: 12px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #0f172a;
+  text-align: justify;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+.puantaj-signatures {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 22px;
+  padding: 0 50px 8px 50px;
+}
+
+.puantaj-sig-col {
+  text-align: center;
+  min-width: 220px;
+}
+
+.puantaj-sig-top {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 24px;
+}
+
+.puantaj-sig-name {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #000000;
+}
+
+.puantaj-sig-title {
+  font-size: 0.78rem;
+  color: #334155;
+  margin-top: 2px;
+}
+
+/* Puantaj A4 Yatay (Landscape) Tek Sayfa PDF Dışa Aktarım Modu */
+.puantaj-pdf-export {
+  width: 1060px !important;
+  max-width: 1060px !important;
+  padding: 8px 10px !important;
+  margin: 0 auto !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+}
+
+.puantaj-pdf-export .puantaj-official-title {
+  font-size: 11pt !important;
+  padding-bottom: 4px !important;
+  margin-bottom: 5px !important;
+}
+
+.puantaj-pdf-export .puantaj-meta-grid {
+  font-size: 7.5pt !important;
+  margin-bottom: 5px !important;
+  line-height: 1.35 !important;
+}
+
+.puantaj-pdf-export .puantaj-table-wrap {
+  overflow: visible !important;
+}
+
+.puantaj-pdf-export .puantaj-table {
+  font-size: 6.2pt !important;
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+.puantaj-pdf-export .puantaj-table th,
+.puantaj-pdf-export .puantaj-table td {
+  padding: 2px 1px !important;
+  border: 1px solid #334155 !important;
+  line-height: 1.15 !important;
+}
+
+.puantaj-pdf-export .puantaj-table .pt-col-no {
+  width: 24px !important;
+}
+
+.puantaj-pdf-export .puantaj-table .pt-col-name {
+  width: 138px !important;
+  min-width: 138px !important;
+  font-size: 6.1pt !important;
+  padding-left: 3px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.puantaj-pdf-export .puantaj-table .pt-col-school {
+  width: 152px !important;
+  min-width: 152px !important;
+  font-size: 5.7pt !important;
+  padding-left: 3px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.puantaj-pdf-export .puantaj-table .pt-col-day {
+  width: 21px !important;
+  min-width: 21px !important;
+  font-size: 6pt !important;
+}
+
+.puantaj-pdf-export .puantaj-table .pt-col-day-name {
+  font-size: 5.2pt !important;
+}
+
+.puantaj-pdf-export .puantaj-table .pt-col-total {
+  width: 44px !important;
+  font-size: 6.2pt !important;
+}
+
+.puantaj-pdf-export .puantaj-cert-text {
+  margin-top: 7px !important;
+  padding: 5px 8px !important;
+  font-size: 7.2pt !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.puantaj-pdf-export .puantaj-signatures {
+  margin-top: 12px !important;
+  padding: 0 40px 4px 40px !important;
+}
+
+.puantaj-pdf-export .puantaj-sig-top {
+  font-size: 7.5pt !important;
+  margin-bottom: 18px !important;
+}
+
+.puantaj-pdf-export .puantaj-sig-name {
+  font-size: 8pt !important;
+}
+
+.puantaj-pdf-export .puantaj-sig-title {
+  font-size: 7pt !important;
 }
 
 /* Tarayıcı Yazdırma (Ctrl+P) */
@@ -2620,4 +3032,34 @@ body {
 
   .sig-name { font-size: 7pt !important; }
   .sig-title { font-size: 6pt !important; }
+
+  .puantaj-paper {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .puantaj-table-wrap {
+    overflow: visible !important;
+  }
+
+  .puantaj-table {
+    font-size: 6pt !important;
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+
+  .puantaj-table th,
+  .puantaj-table td {
+    padding: 1.5px 1px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .puantaj-cert-text {
+    background: transparent !important;
+    border: none !important;
+    font-size: 7pt !important;
+  }
 }

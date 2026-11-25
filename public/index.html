@@ -113,6 +113,12 @@
       <button class="nav-tab active" data-tab="tab-schedule">
         📅 Nöbet Çizelgesi & İstatistikler
       </button>
+      <button class="nav-tab" data-tab="tab-puantaj-own">
+        📋 Puantaj (Kendi Okulu)
+      </button>
+      <button class="nav-tab" data-tab="tab-puantaj-other">
+        🏢 Dış Okul Puantaj
+      </button>
       <button class="nav-tab" data-tab="tab-teachers">
         👥 Öğretmen Kadrosu & Mazeretler
       </button>
@@ -312,6 +318,146 @@
         </div>
       </section>
 
+      <!-- ================= PUANTAJ TAB 1: KENDİ OKULU PUANTAJ ================= -->
+      <section id="tab-puantaj-own" class="tab-pane">
+        <div class="toolbar-card no-print puantaj-toolbar">
+          <div class="toolbar-left">
+            <span class="puantaj-period-badge" id="puantaj-own-period-badge">📋 KASIM 2026 — Kendi Okulu Puantajı</span>
+            <div class="puantaj-hours-inline">
+              <label>Nöbetçi Saat:
+                <input type="number" id="puantaj-own-nobet-hours" class="form-control form-control-sm" value="8" min="1" max="24">
+              </label>
+              <label>Etüt Saat:
+                <input type="number" id="puantaj-own-etut-hours" class="form-control form-control-sm" value="4" min="1" max="24">
+              </label>
+            </div>
+            <label class="puantaj-filter-check">
+              <input type="checkbox" id="chk-puantaj-own-only-active"> Sadece Nöbeti Olanları Göster
+            </label>
+          </div>
+          <div class="toolbar-right">
+            <button type="button" id="btn-puantaj-own-pdf" class="btn btn-danger btn-sm">
+              <span>📄</span> PDF Çıktı Al (A4 Yatay)
+            </button>
+            <button type="button" id="btn-puantaj-own-excel" class="btn btn-success btn-sm">
+              <span>📊</span> Excel İndir
+            </button>
+            <button type="button" id="btn-puantaj-own-print" class="btn btn-secondary btn-sm">
+              <span>🖨️</span> Yazdır
+            </button>
+          </div>
+        </div>
+
+        <div id="printable-puantaj-own" class="puantaj-paper">
+          <div class="puantaj-official-title">BELLETİCİ ÖĞRETMEN EK DERS ÜCRETLERİ TAHAKKUK ÇİZELGESİ</div>
+          <div class="puantaj-meta-grid">
+            <div class="puantaj-meta-left">
+              <div><span class="pm-label">OKULUN ADI :</span> <strong id="po-school-name">-</strong></div>
+              <div><span class="pm-label">İLÇESİ :</span> <strong id="po-district">-</strong></div>
+            </div>
+            <div class="puantaj-meta-right">
+              <div><span class="pm-label">İLGİLİ AY :</span> <strong id="po-month-name">-</strong></div>
+              <div><span class="pm-label">BÜTÇE YILI :</span> <strong id="po-year">-</strong></div>
+            </div>
+          </div>
+
+          <div class="puantaj-table-wrap">
+            <table class="puantaj-table" id="puantaj-own-table">
+              <thead id="puantaj-own-thead"></thead>
+              <tbody id="puantaj-own-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="puantaj-cert-text" id="puantaj-own-cert-text"></div>
+
+          <div class="puantaj-signatures">
+            <div class="puantaj-sig-col">
+              <div class="puantaj-sig-top">Düzenleyen</div>
+              <div class="puantaj-sig-name" id="po-vice-name">-</div>
+              <div class="puantaj-sig-title" id="po-vice-title">-</div>
+            </div>
+            <div class="puantaj-sig-col">
+              <div class="puantaj-sig-top" id="po-today-date">-</div>
+              <div class="puantaj-sig-name" id="po-principal-name">-</div>
+              <div class="puantaj-sig-title" id="po-principal-title">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PUANTAJ TAB 2: DIŞ OKUL PUANTAJ (DİĞER OKULLAR) ================= -->
+      <section id="tab-puantaj-other" class="tab-pane">
+        <div class="toolbar-card no-print puantaj-toolbar">
+          <div class="toolbar-left">
+            <span class="puantaj-period-badge puantaj-other-badge" id="puantaj-other-period-badge">🏢 KASIM 2026 — Dış Okul Puantajı</span>
+            <div class="puantaj-school-filter">
+              <label for="select-puantaj-other-school">Okul Filtresi:</label>
+              <select id="select-puantaj-other-school" class="form-select" style="min-width: 200px; padding: 5px 10px; font-size: 0.82rem;">
+                <option value="__ALL__">Tüm Dış Okullar</option>
+              </select>
+            </div>
+            <div class="puantaj-hours-inline">
+              <label>Nöbetçi Saat:
+                <input type="number" id="puantaj-other-nobet-hours" class="form-control form-control-sm" value="8" min="1" max="24">
+              </label>
+              <label>Etüt Saat:
+                <input type="number" id="puantaj-other-etut-hours" class="form-control form-control-sm" value="4" min="1" max="24">
+              </label>
+            </div>
+            <label class="puantaj-filter-check">
+              <input type="checkbox" id="chk-puantaj-other-only-active"> Sadece Nöbeti Olanları Göster
+            </label>
+          </div>
+          <div class="toolbar-right">
+            <button type="button" id="btn-puantaj-other-pdf" class="btn btn-danger btn-sm">
+              <span>📄</span> PDF Çıktı Al (A4 Yatay)
+            </button>
+            <button type="button" id="btn-puantaj-other-excel" class="btn btn-success btn-sm">
+              <span>📊</span> Excel İndir
+            </button>
+            <button type="button" id="btn-puantaj-other-print" class="btn btn-secondary btn-sm">
+              <span>🖨️</span> Yazdır
+            </button>
+          </div>
+        </div>
+
+        <div id="printable-puantaj-other" class="puantaj-paper">
+          <div class="puantaj-official-title">BELLETİCİ ÖĞRETMEN EK DERS ÜCRETLERİ TAHAKKUK ÇİZELGESİ</div>
+          <div class="puantaj-meta-grid">
+            <div class="puantaj-meta-left">
+              <div class="pm-related-school"><strong id="px-target-school">İLGİLİ OKULA</strong></div>
+              <div><span class="pm-label">İLÇESİ :</span> <strong id="px-district">-</strong></div>
+            </div>
+            <div class="puantaj-meta-right">
+              <div><span class="pm-label">İLGİLİ AY :</span> <strong id="px-month-name">-</strong></div>
+              <div><span class="pm-label">BÜTÇE YILI :</span> <strong id="px-year">-</strong></div>
+            </div>
+          </div>
+
+          <div class="puantaj-table-wrap">
+            <table class="puantaj-table" id="puantaj-other-table">
+              <thead id="puantaj-other-thead"></thead>
+              <tbody id="puantaj-other-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="puantaj-cert-text" id="puantaj-other-cert-text"></div>
+
+          <div class="puantaj-signatures">
+            <div class="puantaj-sig-col">
+              <div class="puantaj-sig-top">Düzenleyen</div>
+              <div class="puantaj-sig-name" id="px-vice-name">-</div>
+              <div class="puantaj-sig-title" id="px-vice-title">-</div>
+            </div>
+            <div class="puantaj-sig-col">
+              <div class="puantaj-sig-top" id="px-today-date">-</div>
+              <div class="puantaj-sig-name" id="px-principal-name">-</div>
+              <div class="puantaj-sig-title" id="px-principal-title">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ================= 2. TAB: ÖĞRETMENLER & MAZERETLER ================= -->
       <section id="tab-teachers" class="tab-pane">
         <div class="card">
@@ -413,8 +559,27 @@
                 <input type="text" id="setting-school-name" class="form-control" value="ANADOLU LİSESİ MÜDÜRLÜĞÜ">
               </div>
               <div class="form-group col-6">
+                <label class="form-label">İlçe (Puantaj Çizelgesinde Görünür):</label>
+                <input type="text" id="setting-district" class="form-control" placeholder="Örn: ŞEREFLİKOÇHİSAR" value="">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
                 <label class="form-label">Onay Tarihi Metni:</label>
                 <input type="text" id="setting-approval-date" class="form-control" value="... / ... / 2026 - UYGUNDUR">
+              </div>
+              <div class="form-group col-6">
+                <div class="form-row" style="margin-bottom: 0;">
+                  <div class="form-group col-6" style="margin-bottom: 0;">
+                    <label class="form-label">Nöbetçi Belletici Ek Ders (Saat):</label>
+                    <input type="number" id="setting-nobet-hours" class="form-control" value="8" min="1" max="24">
+                  </div>
+                  <div class="form-group col-6" style="margin-bottom: 0;">
+                    <label class="form-label">Etüt / Belletici Ek Ders (Saat):</label>
+                    <input type="number" id="setting-etut-hours" class="form-control" value="4" min="1" max="24">
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -846,6 +1011,7 @@
         </div>
         <div class="modal-body">
           <form id="teacher-form">
+            <input type="hidden" id="teacher-input-id">
             <div class="form-group">
               <label class="form-label">Adı Soyadı:</label>
               <input type="text" id="teacher-input-name" class="form-control" placeholder="Örn: AHMET YILMAZ" required>
@@ -856,6 +1022,23 @@
                 <option value="K">Kadın (Kız Pansiyonu)</option>
                 <option value="E">Erkek (Erkek Pansiyonu)</option>
               </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Görevli Olduğu Okul:</label>
+              <div class="school-type-selector">
+                <label class="school-type-option">
+                  <input type="radio" name="teacher-school-type" id="teacher-school-own" value="own" checked>
+                  <span>🏫 Kendi Okulu</span>
+                </label>
+                <label class="school-type-option">
+                  <input type="radio" name="teacher-school-type" id="teacher-school-other" value="other">
+                  <span>🏢 Başka Okul</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-group" id="teacher-other-school-group" style="display: none;">
+              <label class="form-label">Okul Adı (Başka Okul):</label>
+              <input type="text" id="teacher-input-school-name" class="form-control" placeholder="Örn: Tuzgölü Anadolu Lisesi">
             </div>
             <div class="form-group">
               <label class="form-check-label">

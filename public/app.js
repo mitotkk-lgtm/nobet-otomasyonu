@@ -98,10 +98,16 @@
   const maleCountEl = document.getElementById('male-count');
   const btnAddTeacher = document.getElementById('btn-add-teacher');
   const modalTeacherEdit = document.getElementById('modal-teacher-edit');
+  const teacherModalTitle = document.getElementById('teacher-modal-title');
   const btnTeacherModalClose = document.getElementById('btn-teacher-modal-close');
   const teacherForm = document.getElementById('teacher-form');
+  const teacherInputId = document.getElementById('teacher-input-id');
   const teacherInputName = document.getElementById('teacher-input-name');
   const teacherInputGender = document.getElementById('teacher-input-gender');
+  const teacherSchoolOwn = document.getElementById('teacher-school-own');
+  const teacherSchoolOther = document.getElementById('teacher-school-other');
+  const teacherOtherSchoolGroup = document.getElementById('teacher-other-school-group');
+  const teacherInputSchoolName = document.getElementById('teacher-input-school-name');
   const teacherInputEtut = document.getElementById('teacher-input-etut');
   const teacherInputActive = document.getElementById('teacher-input-active');
   const fileExcelUpload = document.getElementById('file-excel-upload');
@@ -116,6 +122,9 @@
   const settingInstTop = document.getElementById('setting-inst-top');
   const settingInstMid = document.getElementById('setting-inst-mid');
   const settingSchoolName = document.getElementById('setting-school-name');
+  const settingDistrict = document.getElementById('setting-district');
+  const settingNobetHours = document.getElementById('setting-nobet-hours');
+  const settingEtutHours = document.getElementById('setting-etut-hours');
   const settingApprovalDate = document.getElementById('setting-approval-date');
   const settingVicePrincipal = document.getElementById('setting-vice-principal');
   const settingViceTitle = document.getElementById('setting-vice-title');
@@ -272,6 +281,24 @@
     return daysList.map(d => window.dutyScheduler.migrateDayObject(d, legacyCols));
   }
 
+  function normalizeTeacherRecord(t) {
+    if (!t || typeof t !== 'object') return t;
+    const schoolType = t.schoolType === 'other' ? 'other' : 'own';
+    const schoolName = schoolType === 'other' ? String(t.schoolName || '').trim() : '';
+    return {
+      ...t,
+      schoolType,
+      schoolName
+    };
+  }
+
+  function getTeacherDisplaySchool(t) {
+    if (t && t.schoolType === 'other') {
+      return (t.schoolName && t.schoolName.trim()) ? t.schoolName.trim() : 'Diğer Okul';
+    }
+    return (settings && settings.schoolName && settings.schoolName.trim()) ? settings.schoolName.trim() : 'Kendi Okulu';
+  }
+
   function getDefaultSettings(isAdminUser = false) {
     const y = new Date().getFullYear();
     if (isAdminUser) {
@@ -279,6 +306,9 @@
         instTop: 'T.C.',
         instMid: 'MİLLİ EĞİTİM BAKANLIĞI',
         schoolName: 'ANADOLU LİSESİ MÜDÜRLÜĞÜ',
+        district: '',
+        nobetHours: 8,
+        etutHours: 4,
         approvalDate: '... / ... / 2026\nUYGUNDUR',
         vicePrincipal: 'Nebi DEMİR',
         viceTitle: 'Pansiyondan Sorumlu Müdür Yardımcısı',
@@ -290,6 +320,9 @@
       instTop: 'T.C.',
       instMid: 'MİLLİ EĞİTİM BAKANLIĞI',
       schoolName: 'OKUL / KURUM ADI MÜDÜRLÜĞÜ',
+      district: '',
+      nobetHours: 8,
+      etutHours: 4,
       approvalDate: `... / ... / ${y}\nUYGUNDUR`,
       vicePrincipal: 'Müdür Yardımcısı Adı Soyadı',
       viceTitle: 'Pansiyondan Sorumlu Müdür Yardımcısı',
@@ -426,7 +459,7 @@
     if (!parsed || typeof parsed !== 'object') return false;
 
     if (Array.isArray(parsed.teachers)) {
-      teachers = parsed.teachers;
+      teachers = parsed.teachers.map(normalizeTeacherRecord);
     }
     if (parsed.settings) settings = { ...settings, ...parsed.settings };
     if (parsed.currentYear !== undefined) currentYear = parseInt(parsed.currentYear, 10);
@@ -537,6 +570,7 @@
     renderStatsTables();
     renderTeachersList();
     renderHolidaysCalendar();
+    renderPuantajTables();
   }
 
   async function loadActiveUserWorkspaceAsync(silent = true) {
@@ -817,6 +851,9 @@
     settingInstTop.value = settings.instTop;
     settingInstMid.value = settings.instMid;
     settingSchoolName.value = settings.schoolName;
+    if (settingDistrict) settingDistrict.value = settings.district || '';
+    if (settingNobetHours) settingNobetHours.value = settings.nobetHours || 8;
+    if (settingEtutHours) settingEtutHours.value = settings.etutHours || 4;
     settingApprovalDate.value = settings.approvalDate;
     settingVicePrincipal.value = settings.vicePrincipal;
     settingViceTitle.value = settings.viceTitle;
@@ -981,6 +1018,7 @@
     });
 
     syncViewToggles();
+    renderPuantajTables();
   }
 
   function renderSlotButton(teacherName, dayIndex, role, typeClass, isLocked = false) {
@@ -1730,6 +1768,11 @@
     if (!t.active || t.exempt) card.classList.add('inactive');
 
     const badges = [];
+    if (t.schoolType === 'other') {
+      badges.push(`<span class="mini-badge school-other">🏢 Başka Okul: ${escapeHtml(t.schoolName || 'Belirtilmedi')}</span>`);
+    } else {
+      badges.push('<span class="mini-badge school-own">🏫 Kendi Okulu</span>');
+    }
     if (!t.active) badges.push('<span class="mini-badge inactive">Pasif</span>');
     if (t.exempt) badges.push('<span class="mini-badge inactive">Muaf</span>');
     if (t.etutEligible) badges.push('<span class="mini-badge etut">Etüt</span>');
@@ -1739,14 +1782,20 @@
 
     card.innerHTML = `
       <div class="teacher-card-info">
-        <div class="teacher-card-name">${t.name}</div>
+        <div class="teacher-card-name">${escapeHtml(t.name)}</div>
         <div class="teacher-card-badges">${badges.join('')}</div>
       </div>
       <div class="teacher-card-actions">
+        <button class="btn btn-secondary btn-sm btn-edit-teacher" title="Öğretmeni ve okul bilgisini düzenle">✏️</button>
         <button class="btn btn-secondary btn-sm btn-toggle-active" title="Aktif/Pasif">${t.active ? 'Aktif' : 'Pasif'}</button>
         <button class="btn btn-outline-danger btn-sm btn-delete-teacher" title="Sil">🗑️</button>
       </div>
     `;
+
+    card.querySelector('.btn-edit-teacher').addEventListener('click', () => {
+      if (!ensureNotExpiredOrAlert()) return;
+      openTeacherModal(t);
+    });
 
     card.querySelector('.btn-toggle-active').addEventListener('click', () => {
       if (!ensureNotExpiredOrAlert()) return;
@@ -1754,6 +1803,7 @@
       saveToLocalStorage();
       renderTeachersList();
       renderStatsTables();
+      renderPuantajTables();
     });
 
     card.querySelector('.btn-delete-teacher').addEventListener('click', () => {
@@ -1763,20 +1813,54 @@
         saveToLocalStorage();
         renderTeachersList();
         renderStatsTables();
+        renderPuantajTables();
       }
     });
 
     return card;
   }
 
+  function syncTeacherSchoolFieldVisibility() {
+    const isOther = !!(teacherSchoolOther && teacherSchoolOther.checked);
+    if (teacherOtherSchoolGroup) {
+      teacherOtherSchoolGroup.style.display = isOther ? 'block' : 'none';
+    }
+    if (teacherInputSchoolName) {
+      teacherInputSchoolName.required = isOther;
+      if (!isOther) teacherInputSchoolName.value = '';
+    }
+  }
+
+  function openTeacherModal(teacherToEdit = null) {
+    const isEdit = !!teacherToEdit;
+    if (teacherModalTitle) {
+      teacherModalTitle.textContent = isEdit ? '✏️ Öğretmen Bilgilerini Düzenle' : '➕ Yeni Öğretmen Ekle';
+    }
+    if (teacherInputId) teacherInputId.value = isEdit ? teacherToEdit.id : '';
+    teacherInputName.value = isEdit ? teacherToEdit.name : '';
+    teacherInputGender.value = isEdit ? teacherToEdit.gender : 'E';
+    teacherInputEtut.checked = isEdit ? !!teacherToEdit.etutEligible : false;
+    teacherInputActive.checked = isEdit ? teacherToEdit.active !== false : true;
+
+    const isOther = isEdit && teacherToEdit.schoolType === 'other';
+    if (teacherSchoolOwn) teacherSchoolOwn.checked = !isOther;
+    if (teacherSchoolOther) teacherSchoolOther.checked = isOther;
+    syncTeacherSchoolFieldVisibility();
+    if (teacherInputSchoolName) {
+      teacherInputSchoolName.value = isOther ? (teacherToEdit.schoolName || '') : '';
+    }
+
+    modalTeacherEdit.classList.add('active');
+    setTimeout(() => teacherInputName.focus(), 40);
+  }
+
+  if (teacherSchoolOwn) teacherSchoolOwn.addEventListener('change', syncTeacherSchoolFieldVisibility);
+  if (teacherSchoolOther) teacherSchoolOther.addEventListener('change', syncTeacherSchoolFieldVisibility);
+
   // Yeni Öğretmen Ekle Modal
   btnAddTeacher.addEventListener('click', () => {
     if (!ensureNotExpiredOrAlert()) return;
-    teacherInputName.value = '';
-    teacherInputGender.value = 'E';
-    teacherInputEtut.checked = false;
-    teacherInputActive.checked = true;
-    modalTeacherEdit.classList.add('active');
+    openTeacherModal(null);
   });
 
   btnTeacherModalClose.addEventListener('click', () => {
@@ -1786,13 +1870,65 @@
   teacherForm.addEventListener('submit', (e) => {
     e.preventDefault();
     if (!ensureNotExpiredOrAlert()) return;
-    const name = teacherInputName.value.trim().toUpperCase();
+    const name = teacherInputName.value.trim().toLocaleUpperCase('tr');
     if (!name) return;
+
+    const schoolType = (teacherSchoolOther && teacherSchoolOther.checked) ? 'other' : 'own';
+    const schoolName = schoolType === 'other' && teacherInputSchoolName
+      ? teacherInputSchoolName.value.trim()
+      : '';
+
+    if (schoolType === 'other' && !schoolName) {
+      alert('Başka okul seçildiğinde okul adını girmeniz zorunludur.');
+      if (teacherInputSchoolName) teacherInputSchoolName.focus();
+      return;
+    }
+
+    const editId = teacherInputId ? teacherInputId.value.trim() : '';
+    if (editId) {
+      const target = teachers.find(item => item.id === editId);
+      if (target) {
+        const oldName = target.name;
+        target.name = name;
+        target.gender = teacherInputGender.value;
+        target.schoolType = schoolType;
+        target.schoolName = schoolName;
+        target.etutEligible = teacherInputEtut.checked;
+        target.active = teacherInputActive.checked;
+        target.exempt = !teacherInputActive.checked;
+
+        // İsim değiştiyse mevcut ve kayıtlı nöbet çizelgelerindeki adları da güncelle
+        if (oldName && oldName !== name) {
+          const allSlotRoles = [...window.dutyScheduler.ALL_SLOT_IDS, 'etut'];
+          const renameInDays = (daysArr) => {
+            if (!Array.isArray(daysArr)) return;
+            daysArr.forEach(d => {
+              allSlotRoles.forEach(r => {
+                if (d[r] === oldName) d[r] = name;
+              });
+            });
+          };
+          renameInDays(scheduleDays);
+          Object.keys(monthlySchedules).forEach(k => renameInDays(monthlySchedules[k]));
+        }
+
+        saveToLocalStorage();
+        renderTeachersList();
+        renderScheduleTable();
+        renderStatsTables();
+        renderPuantajTables();
+        modalTeacherEdit.classList.remove('active');
+        showToast('Öğretmen Güncellendi', `"${name}" bilgileri kaydedildi.`, 'success');
+        return;
+      }
+    }
 
     const newTeacher = {
       id: 't_' + Date.now(),
       name: name,
       gender: teacherInputGender.value,
+      schoolType: schoolType,
+      schoolName: schoolName,
       etutEligible: teacherInputEtut.checked,
       active: teacherInputActive.checked,
       exempt: !teacherInputActive.checked,
@@ -1804,11 +1940,12 @@
     saveToLocalStorage();
     renderTeachersList();
     renderStatsTables();
+    renderPuantajTables();
     modalTeacherEdit.classList.remove('active');
     alert(`"${name}" başarıyla öğretmen kadrosuna eklendi.`);
   });
 
-  // Excel'den Kadro Yükle
+  // Excel'den Kadro Yükle (Hem standart H/M şablonu hem Belletmenler sayfasını destekler)
   fileExcelUpload.addEventListener('click', (e) => {
     if (!ensureNotExpiredOrAlert()) {
       e.preventDefault();
@@ -1827,19 +1964,29 @@
       try {
         const data = new Uint8Array(evt.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[firstSheetName];
-
-        // Excel'den öğretmenleri tara
         const importedTeachers = [];
-        // H sütunu (Kız) ve M sütunu (Erkek) arayalım
-        for (let r = 1; r <= 50; r++) {
-          const fName = sheet[`H${r}`] ? String(sheet[`H${r}`].v).trim() : null;
-          if (fName && fName !== 'ÖĞRETMEN' && fName.length > 3 && !importedTeachers.some(t => t.name === fName)) {
+
+        // 1. Öncelik: 'Belletmenler' sayfası (6030 / MEB ikili puantaj şablonu: I=Ad, J=Okul, K=Cinsiyet, A2=Kendi Okulu)
+        if (workbook.SheetNames.includes('Belletmenler')) {
+          const bSheet = workbook.Sheets['Belletmenler'];
+          const ownSchoolRef = bSheet['A2'] ? String(bSheet['A2'].v || '').trim().toLocaleLowerCase('tr') : '';
+          for (let r = 3; r <= 100; r++) {
+            const rawName = bSheet[`I${r}`] ? String(bSheet[`I${r}`].v || '').trim() : '';
+            if (!rawName || rawName.length < 3) continue;
+            const upperName = rawName.toLocaleUpperCase('tr');
+            if (importedTeachers.some(t => t.name === upperName)) continue;
+
+            const rawSchool = bSheet[`J${r}`] ? String(bSheet[`J${r}`].v || '').trim() : '';
+            const rawGender = bSheet[`K${r}`] ? String(bSheet[`K${r}`].v || '').trim().toLocaleLowerCase('tr') : '';
+            const gender = rawGender.includes('kad') || rawGender === 'k' ? 'K' : 'E';
+            const isOther = Boolean(rawSchool && ownSchoolRef && rawSchool.toLocaleLowerCase('tr') !== ownSchoolRef);
+
             importedTeachers.push({
-              id: 'imp_f_' + r,
-              name: fName.toUpperCase(),
-              gender: 'K',
+              id: 'imp_b_' + r,
+              name: upperName,
+              gender,
+              schoolType: isOther ? 'other' : 'own',
+              schoolName: isOther ? rawSchool : '',
               etutEligible: false,
               active: true,
               exempt: false,
@@ -1847,19 +1994,44 @@
               blockedDays: []
             });
           }
+        }
 
-          const mName = sheet[`M${r}`] ? String(sheet[`M${r}`].v).trim() : null;
-          if (mName && mName !== 'ÖĞRETMEN' && mName.length > 3 && !importedTeachers.some(t => t.name === mName)) {
-            importedTeachers.push({
-              id: 'imp_m_' + r,
-              name: mName.toUpperCase(),
-              gender: 'E',
-              etutEligible: mName.includes('HAYRULLAH') || mName.includes('NEBİ') || mName.includes('MUTLU'),
-              active: true,
-              exempt: false,
-              blockedDates: [],
-              blockedDays: []
-            });
+        // 2. Standart şablon (İlk sayfa H sütunu Kız, M sütunu Erkek)
+        if (importedTeachers.length === 0) {
+          const firstSheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[firstSheetName];
+          for (let r = 1; r <= 50; r++) {
+            const fName = sheet[`H${r}`] ? String(sheet[`H${r}`].v).trim() : null;
+            if (fName && fName !== 'ÖĞRETMEN' && fName.length > 3 && !importedTeachers.some(t => t.name === fName.toLocaleUpperCase('tr'))) {
+              importedTeachers.push({
+                id: 'imp_f_' + r,
+                name: fName.toLocaleUpperCase('tr'),
+                gender: 'K',
+                schoolType: 'own',
+                schoolName: '',
+                etutEligible: false,
+                active: true,
+                exempt: false,
+                blockedDates: [],
+                blockedDays: []
+              });
+            }
+
+            const mName = sheet[`M${r}`] ? String(sheet[`M${r}`].v).trim() : null;
+            if (mName && mName !== 'ÖĞRETMEN' && mName.length > 3 && !importedTeachers.some(t => t.name === mName.toLocaleUpperCase('tr'))) {
+              importedTeachers.push({
+                id: 'imp_m_' + r,
+                name: mName.toLocaleUpperCase('tr'),
+                gender: 'E',
+                schoolType: 'own',
+                schoolName: '',
+                etutEligible: mName.includes('HAYRULLAH') || mName.includes('NEBİ') || mName.includes('MUTLU'),
+                active: true,
+                exempt: false,
+                blockedDates: [],
+                blockedDays: []
+              });
+            }
           }
         }
 
@@ -1868,13 +2040,16 @@
           saveToLocalStorage();
           renderTeachersList();
           renderStatsTables();
-          alert(`Excel dosyasından ${importedTeachers.length} öğretmen başarıyla yüklendi!`);
+          renderPuantajTables();
+          const otherCount = importedTeachers.filter(t => t.schoolType === 'other').length;
+          alert(`Excel dosyasından ${importedTeachers.length} öğretmen başarıyla yüklendi! (${importedTeachers.length - otherCount} Kendi Okulu, ${otherCount} Başka Okul)`);
         } else {
-          alert('Excel dosyasında H ve M sütunlarında öğretmen isimleri bulunamadı.');
+          alert('Excel dosyasında öğretmen isimleri bulunamadı.');
         }
       } catch (err) {
         alert('Excel dosyası okunurken hata oluştu: ' + err.message);
       }
+      e.target.value = '';
     };
     reader.readAsArrayBuffer(file);
   });
@@ -1963,6 +2138,9 @@
     settings.instTop = settingInstTop.value.trim();
     settings.instMid = settingInstMid.value.trim();
     settings.schoolName = settingSchoolName.value.trim();
+    if (settingDistrict) settings.district = settingDistrict.value.trim();
+    if (settingNobetHours) settings.nobetHours = Math.max(1, parseInt(settingNobetHours.value, 10) || 8);
+    if (settingEtutHours) settings.etutHours = Math.max(1, parseInt(settingEtutHours.value, 10) || 4);
     settings.approvalDate = settingApprovalDate.value.trim();
     settings.vicePrincipal = settingVicePrincipal.value.trim();
     settings.viceTitle = settingViceTitle.value.trim();
@@ -1970,6 +2148,7 @@
     settings.principalTitle = settingPrincipalTitle.value.trim();
 
     applySettingsToUI();
+    renderPuantajTables();
     saveToLocalStorage();
     alert('Kurum ve imza ayarları başarıyla kaydedildi!');
   });
@@ -2618,6 +2797,639 @@
         switchTab(targetId);
       });
     });
+
+    setupPuantajHandlers();
+  }
+
+  // ================= PUANTAJ (KENDİ OKULU) & DIŞ OKUL PUANTAJ MODÜLÜ =================
+  const DAY_SHORT_NAMES = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+
+  const puantajOwnNobetHoursEl = document.getElementById('puantaj-own-nobet-hours');
+  const puantajOwnEtutHoursEl = document.getElementById('puantaj-own-etut-hours');
+  const puantajOtherNobetHoursEl = document.getElementById('puantaj-other-nobet-hours');
+  const puantajOtherEtutHoursEl = document.getElementById('puantaj-other-etut-hours');
+  const chkPuantajOwnOnlyActive = document.getElementById('chk-puantaj-own-only-active');
+  const chkPuantajOtherOnlyActive = document.getElementById('chk-puantaj-other-only-active');
+  const selectPuantajOtherSchool = document.getElementById('select-puantaj-other-school');
+
+  const btnPuantajOwnPdf = document.getElementById('btn-puantaj-own-pdf');
+  const btnPuantajOwnExcel = document.getElementById('btn-puantaj-own-excel');
+  const btnPuantajOwnPrint = document.getElementById('btn-puantaj-own-print');
+  const btnPuantajOtherPdf = document.getElementById('btn-puantaj-other-pdf');
+  const btnPuantajOtherExcel = document.getElementById('btn-puantaj-other-excel');
+  const btnPuantajOtherPrint = document.getElementById('btn-puantaj-other-print');
+
+  function getTodayFormattedTR() {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    return `${dd}.${mm}.${now.getFullYear()}`;
+  }
+
+  function buildPuantajDataset(mode) {
+    const nobetHrs = Math.max(1, parseInt(settings.nobetHours, 10) || 8);
+    const etutHrs = Math.max(1, parseInt(settings.etutHours, 10) || 4);
+    const activeIds = getActiveColumnIds();
+
+    const days = (scheduleDays && scheduleDays.length > 0)
+      ? scheduleDays.map(d => window.dutyScheduler.migrateDayObject(d))
+      : window.dutyScheduler.generateMonthDays(currentYear, currentMonth, closedDates);
+
+    const onlyActive = mode === 'own'
+      ? !!(chkPuantajOwnOnlyActive && chkPuantajOwnOnlyActive.checked)
+      : !!(chkPuantajOtherOnlyActive && chkPuantajOtherOnlyActive.checked);
+
+    const selectedSchool = (mode === 'other' && selectPuantajOtherSchool)
+      ? selectPuantajOtherSchool.value
+      : '__ALL__';
+
+    const filteredTeachers = teachers
+      .map(normalizeTeacherRecord)
+      .filter(t => {
+        if (mode === 'own') return t.schoolType !== 'other';
+        if (t.schoolType !== 'other') return false;
+        if (selectedSchool && selectedSchool !== '__ALL__') {
+          return getTeacherDisplaySchool(t) === selectedSchool;
+        }
+        return true;
+      });
+
+    const dailyCounts = new Array(days.length).fill(0);
+    let totalDutyCount = 0;
+    let grandTotalHours = 0;
+    const rows = [];
+
+    filteredTeachers.forEach(t => {
+      const dayHours = new Array(days.length).fill(0);
+      let rowTotal = 0;
+
+      days.forEach((d, idx) => {
+        if (d.isClosed) return;
+        let h = 0;
+        for (let c = 0; c < activeIds.length; c++) {
+          if (d[activeIds[c]] === t.name) {
+            h += nobetHrs;
+          }
+        }
+        if (d.hasEtut && d.etut === t.name) {
+          h += etutHrs;
+        }
+        if (h > 0) {
+          dayHours[idx] = h;
+          rowTotal += h;
+        }
+      });
+
+      if (onlyActive && rowTotal === 0) return;
+
+      dayHours.forEach((h, idx) => {
+        if (h > 0) {
+          dailyCounts[idx]++;
+          totalDutyCount++;
+        }
+      });
+      grandTotalHours += rowTotal;
+
+      rows.push({
+        teacher: t,
+        schoolDisplay: getTeacherDisplaySchool(t),
+        dayHours,
+        totalHours: rowTotal
+      });
+    });
+
+    return {
+      mode,
+      days,
+      rows,
+      dailyCounts,
+      totalDutyCount,
+      grandTotalHours,
+      nobetHrs,
+      etutHrs,
+      selectedSchool
+    };
+  }
+
+  function refreshOtherSchoolFilterDropdown() {
+    if (!selectPuantajOtherSchool) return;
+    const prevVal = selectPuantajOtherSchool.value || '__ALL__';
+    const distinctSchools = [];
+    teachers.map(normalizeTeacherRecord).forEach(t => {
+      if (t.schoolType === 'other') {
+        const sName = getTeacherDisplaySchool(t);
+        if (sName && !distinctSchools.includes(sName)) {
+          distinctSchools.push(sName);
+        }
+      }
+    });
+    distinctSchools.sort((a, b) => a.localeCompare(b, 'tr'));
+
+    selectPuantajOtherSchool.innerHTML = '<option value="__ALL__">Tüm Dış Okullar</option>';
+    distinctSchools.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      selectPuantajOtherSchool.appendChild(opt);
+    });
+
+    if (prevVal === '__ALL__' || distinctSchools.includes(prevVal)) {
+      selectPuantajOtherSchool.value = prevVal;
+    } else {
+      selectPuantajOtherSchool.value = '__ALL__';
+    }
+  }
+
+  function renderSinglePuantaj(mode) {
+    const isOwn = mode === 'own';
+    const thead = document.getElementById(isOwn ? 'puantaj-own-thead' : 'puantaj-other-thead');
+    const tbody = document.getElementById(isOwn ? 'puantaj-own-tbody' : 'puantaj-other-tbody');
+    if (!thead || !tbody) return;
+
+    const ds = buildPuantajDataset(mode);
+    const mName = (window.dutyScheduler.monthNames[currentMonth] || '').toLocaleUpperCase('tr');
+    const todayStr = getTodayFormattedTR();
+    const districtVal = (settings.district && settings.district.trim())
+      ? settings.district.trim().toLocaleUpperCase('tr')
+      : '-';
+
+    const periodBadge = document.getElementById(isOwn ? 'puantaj-own-period-badge' : 'puantaj-other-period-badge');
+    if (periodBadge) {
+      periodBadge.textContent = isOwn
+        ? `📋 ${mName} ${currentYear} — Kendi Okulu Puantajı (${ds.rows.length} Öğretmen, ${ds.grandTotalHours} Saat)`
+        : `🏢 ${mName} ${currentYear} — Dış Okul Puantajı (${ds.rows.length} Öğretmen, ${ds.grandTotalHours} Saat)`;
+    }
+
+    if (isOwn) {
+      const elSchool = document.getElementById('po-school-name');
+      const elDist = document.getElementById('po-district');
+      const elMonth = document.getElementById('po-month-name');
+      const elYear = document.getElementById('po-year');
+      const elVice = document.getElementById('po-vice-name');
+      const elViceT = document.getElementById('po-vice-title');
+      const elToday = document.getElementById('po-today-date');
+      const elPrin = document.getElementById('po-principal-name');
+      const elPrinT = document.getElementById('po-principal-title');
+      if (elSchool) elSchool.textContent = (settings.schoolName || '').toLocaleUpperCase('tr');
+      if (elDist) elDist.textContent = districtVal;
+      if (elMonth) elMonth.textContent = mName;
+      if (elYear) elYear.textContent = String(currentYear);
+      if (elVice) elVice.textContent = settings.vicePrincipal || '';
+      if (elViceT) elViceT.textContent = settings.viceTitle || '';
+      if (elToday) elToday.textContent = todayStr;
+      if (elPrin) elPrin.textContent = settings.principal || '';
+      if (elPrinT) elPrinT.textContent = settings.principalTitle || '';
+    } else {
+      const elTarget = document.getElementById('px-target-school');
+      const elDist = document.getElementById('px-district');
+      const elMonth = document.getElementById('px-month-name');
+      const elYear = document.getElementById('px-year');
+      const elVice = document.getElementById('px-vice-name');
+      const elViceT = document.getElementById('px-vice-title');
+      const elToday = document.getElementById('px-today-date');
+      const elPrin = document.getElementById('px-principal-name');
+      const elPrinT = document.getElementById('px-principal-title');
+      if (elTarget) {
+        elTarget.textContent = (ds.selectedSchool && ds.selectedSchool !== '__ALL__')
+          ? `${ds.selectedSchool.toLocaleUpperCase('tr')} MÜDÜRLÜĞÜNE`
+          : 'İLGİLİ OKULA';
+      }
+      if (elDist) elDist.textContent = districtVal;
+      if (elMonth) elMonth.textContent = mName;
+      if (elYear) elYear.textContent = String(currentYear);
+      if (elVice) elVice.textContent = settings.vicePrincipal || '';
+      if (elViceT) elViceT.textContent = settings.viceTitle || '';
+      if (elToday) elToday.textContent = todayStr;
+      if (elPrin) elPrin.textContent = settings.principal || '';
+      if (elPrinT) elPrinT.textContent = settings.principalTitle || '';
+    }
+
+    // Başlık Satırları (Excel şablonundaki Satır 4 & Satır 5 ile birebir)
+    const dayNameHeaders = ds.days.map(d => {
+      const cls = d.isClosed ? 'pt-closed' : (d.isWeekend ? 'pt-wknd' : '');
+      return `<th class="pt-col-day pt-col-day-name ${cls}" title="${d.dayName}">${DAY_SHORT_NAMES[d.dayOfWeek]}</th>`;
+    }).join('');
+
+    const dayNumHeaders = ds.days.map(d => {
+      const cls = d.isClosed ? 'pt-closed' : (d.isWeekend ? 'pt-wknd' : '');
+      return `<th class="pt-col-day ${cls}">${String(d.dayNumber).padStart(2, '0')}</th>`;
+    }).join('');
+
+    thead.innerHTML = `
+      <tr>
+        <th rowspan="2" class="pt-col-no">Sıra No</th>
+        <th colspan="2">ÖĞRETMENİN</th>
+        ${dayNameHeaders}
+        <th rowspan="2" class="pt-col-total">TOPLAM SAAT SAYISI</th>
+      </tr>
+      <tr>
+        <th class="pt-col-name" style="text-align:center;">ADI VE SOYADI</th>
+        <th class="pt-col-school" style="text-align:center;">OKULU / KURUMU</th>
+        ${dayNumHeaders}
+      </tr>
+    `;
+
+    // Gövde Satırları
+    tbody.innerHTML = '';
+    if (ds.rows.length === 0) {
+      const emptyTr = document.createElement('tr');
+      const totalCols = 4 + ds.days.length;
+      const msg = isOwn
+        ? 'Kendi okulunuza ait öğretmen bulunamadı (veya bu ay nöbeti yok). "Öğretmen Kadrosu" sekmesinden öğretmen ekleyebilirsiniz.'
+        : 'Başka okuldan tanımlı öğretmen bulunamadı. "Öğretmen Kadrosu" sekmesinden "Başka Okul" seçeneğiyle öğretmen ekleyebilirsiniz.';
+      emptyTr.innerHTML = `<td colspan="${totalCols}" style="padding: 18px; color: #64748b; font-style: italic;">${msg}</td>`;
+      tbody.appendChild(emptyTr);
+    } else {
+      ds.rows.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+        const dayCells = ds.days.map((d, dIdx) => {
+          const h = row.dayHours[dIdx];
+          const cls = d.isClosed ? 'pt-closed' : (d.isWeekend ? 'pt-wknd' : '');
+          return `<td class="pt-col-day ${cls} ${h > 0 ? 'pt-hour-filled' : ''}">${h > 0 ? h : ''}</td>`;
+        }).join('');
+
+        tr.innerHTML = `
+          <td class="pt-col-no">${idx + 1}</td>
+          <td class="pt-col-name">${escapeHtml(row.teacher.name)}</td>
+          <td class="pt-col-school">${escapeHtml(row.schoolDisplay)}</td>
+          ${dayCells}
+          <td class="pt-col-total">${row.totalHours}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // GÜNLÜK GÖREV SAYISI Satırı (R56)
+    const dailyTr = document.createElement('tr');
+    dailyTr.className = 'pt-daily-row';
+    const dailyCells = ds.days.map((d, dIdx) => {
+      const cls = d.isClosed ? 'pt-closed' : (d.isWeekend ? 'pt-wknd' : '');
+      return `<td class="pt-col-day ${cls}">${ds.dailyCounts[dIdx]}</td>`;
+    }).join('');
+    dailyTr.innerHTML = `
+      <td></td>
+      <td colspan="2" style="text-align:right; padding-right:8px;">GÜNLÜK GÖREV SAYISI :</td>
+      ${dailyCells}
+      <td class="pt-col-total">${ds.totalDutyCount}</td>
+    `;
+    tbody.appendChild(dailyTr);
+
+    // GENEL TOPLAM Satırı (R57)
+    const grandTr = document.createElement('tr');
+    grandTr.className = 'pt-grand-row';
+    grandTr.innerHTML = `
+      <td colspan="${3 + ds.days.length}" style="text-align:right; padding-right:10px;">GENEL TOPLAM :</td>
+      <td class="pt-col-total">${ds.grandTotalHours}</td>
+    `;
+    tbody.appendChild(grandTr);
+
+    // Resmi MEB 39. Madde Alt Yazısı (A58)
+    const certEl = document.getElementById(isOwn ? 'puantaj-own-cert-text' : 'puantaj-other-cert-text');
+    if (certEl) {
+      certEl.innerHTML = `Yukarıda belirtilen görevlilerce MEB Bağlı Resmi Okullarda Yatılılık, Bursluluk, Sosyal Yardımlar ve Okul Pansiyonları Yönetmeliğinin 39. Madde gereğince belletici olarak görevlendirilen öğretmenler <strong>${mName}</strong> ayında toplam <strong>${ds.grandTotalHours}</strong> saat ek ders ücret karşılığı belleticilik görevi yapmışlardır.`;
+    }
+  }
+
+  function syncPuantajHoursInputs() {
+    const nHrs = Math.max(1, parseInt(settings.nobetHours, 10) || 8);
+    const eHrs = Math.max(1, parseInt(settings.etutHours, 10) || 4);
+    if (puantajOwnNobetHoursEl) puantajOwnNobetHoursEl.value = nHrs;
+    if (puantajOwnEtutHoursEl) puantajOwnEtutHoursEl.value = eHrs;
+    if (puantajOtherNobetHoursEl) puantajOtherNobetHoursEl.value = nHrs;
+    if (puantajOtherEtutHoursEl) puantajOtherEtutHoursEl.value = eHrs;
+  }
+
+  function renderPuantajTables() {
+    syncPuantajHoursInputs();
+    refreshOtherSchoolFilterDropdown();
+    renderSinglePuantaj('own');
+    renderSinglePuantaj('other');
+  }
+
+  async function exportPuantajPdf(mode) {
+    const rightRes = await consumeExportRightOrAlert();
+    if (!rightRes) return;
+
+    const isOwn = mode === 'own';
+    const paperEl = document.getElementById(isOwn ? 'printable-puantaj-own' : 'printable-puantaj-other');
+    const btnEl = isOwn ? btnPuantajOwnPdf : btnPuantajOtherPdf;
+    if (!paperEl) return;
+
+    renderSinglePuantaj(mode);
+
+    const mName = (window.dutyScheduler.monthNames[currentMonth] || 'AY').toLocaleUpperCase('tr');
+    let filename = isOwn
+      ? `${currentYear}_${mName}_PUANTAJ_KENDI_OKULU.pdf`
+      : `${currentYear}_${mName}_DIS_OKUL_PUANTAJ.pdf`;
+
+    if (!isOwn && selectPuantajOtherSchool && selectPuantajOtherSchool.value !== '__ALL__') {
+      const safeSchool = selectPuantajOtherSchool.value.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ]+/g, '_').slice(0, 35);
+      filename = `${currentYear}_${mName}_DIS_OKUL_PUANTAJ_${safeSchool}.pdf`;
+    }
+
+    paperEl.classList.add('puantaj-pdf-export');
+    const origHtml = btnEl ? btnEl.innerHTML : '';
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.textContent = '⏳ PDF Oluşturuluyor...';
+    }
+
+    const opt = {
+      margin: [5, 5, 5, 5],
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    const cleanup = () => {
+      paperEl.classList.remove('puantaj-pdf-export');
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.innerHTML = origHtml || '<span>📄</span> PDF Çıktı Al (A4 Yatay)';
+      }
+    };
+
+    html2pdf().set(opt).from(paperEl).save().then(() => {
+      cleanup();
+    }).catch(err => {
+      console.error('Puantaj PDF hatası:', err);
+      cleanup();
+      alert('Puantaj PDF oluşturulurken bir hata oluştu: ' + (err && err.message ? err.message : err));
+    });
+  }
+
+  async function printPuantaj(mode) {
+    const rightRes = await consumeExportRightOrAlert();
+    if (!rightRes) return;
+
+    renderSinglePuantaj(mode);
+    let styleEl = document.getElementById('temp-puantaj-landscape-print');
+    if (styleEl) styleEl.remove();
+    styleEl = document.createElement('style');
+    styleEl.id = 'temp-puantaj-landscape-print';
+    styleEl.textContent = '@media print { @page { size: A4 landscape; margin: 5mm; } }';
+    document.head.appendChild(styleEl);
+
+    window.print();
+    setTimeout(() => {
+      const s = document.getElementById('temp-puantaj-landscape-print');
+      if (s) s.remove();
+    }, 1000);
+  }
+
+  async function exportPuantajExcel(mode) {
+    const rightRes = await consumeExportRightOrAlert();
+    if (!rightRes) return;
+
+    try {
+      const isOwn = mode === 'own';
+      const ds = buildPuantajDataset(mode);
+      const wb = XLSX.utils.book_new();
+      const ws = {};
+      const colLet = (idx) => XLSX.utils.encode_col(idx);
+
+      const mName = (window.dutyScheduler.monthNames[currentMonth] || '').toLocaleUpperCase('tr');
+      const totalColIdx = 3 + ds.days.length; // A=0(Sıra), B=1(Ad), C=2(Okul), D..(3+N-1)(Günler), totalColIdx(Toplam)
+      const lastCol = colLet(totalColIdx);
+
+      const thinBorder = {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '000000' } },
+        right: { style: 'thin', color: { rgb: '000000' } }
+      };
+
+      const titleStyle = {
+        font: { name: 'Calibri', sz: 13, bold: true, color: { rgb: '000000' } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      };
+      const metaBold = {
+        font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: '000000' } },
+        alignment: { horizontal: 'left', vertical: 'center' }
+      };
+      const headerStyle = {
+        font: { name: 'Calibri', sz: 9, bold: true, color: { rgb: '000000' } },
+        fill: { fgColor: { rgb: 'E2E8F0' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: thinBorder
+      };
+      const wkndHeaderStyle = {
+        font: { name: 'Calibri', sz: 9, bold: true, color: { rgb: '78350F' } },
+        fill: { fgColor: { rgb: 'FDE68A' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: thinBorder
+      };
+      const cellCenter = {
+        font: { name: 'Calibri', sz: 9, bold: false, color: { rgb: '000000' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: thinBorder
+      };
+      const cellWkndCenter = {
+        font: { name: 'Calibri', sz: 9, bold: true, color: { rgb: '000000' } },
+        fill: { fgColor: { rgb: 'FDE68A' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: thinBorder
+      };
+      const cellLeft = {
+        font: { name: 'Calibri', sz: 9, bold: false, color: { rgb: '000000' } },
+        alignment: { horizontal: 'left', vertical: 'center' },
+        border: thinBorder
+      };
+      const cellTotal = {
+        font: { name: 'Calibri', sz: 9, bold: true, color: { rgb: '000000' } },
+        fill: { fgColor: { rgb: 'F8FAFC' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: thinBorder
+      };
+
+      const merges = [
+        { s: { c: 0, r: 0 }, e: { c: totalColIdx, r: 0 } },
+        { s: { c: 0, r: 3 }, e: { c: 0, r: 4 } },
+        { s: { c: 1, r: 3 }, e: { c: 2, r: 3 } },
+        { s: { c: totalColIdx, r: 3 }, e: { c: totalColIdx, r: 4 } }
+      ];
+
+      ws['A1'] = { t: 's', v: 'BELLETİCİ ÖĞRETMEN EK DERS ÜCRETLERİ TAHAKKUK ÇİZELGESİ', s: titleStyle };
+
+      if (isOwn) {
+        ws['A2'] = { t: 's', v: 'OKULUN ADI :', s: metaBold };
+        ws['C2'] = { t: 's', v: (settings.schoolName || '').toLocaleUpperCase('tr'), s: metaBold };
+      } else {
+        const targetLabel = (ds.selectedSchool && ds.selectedSchool !== '__ALL__')
+          ? `${ds.selectedSchool.toLocaleUpperCase('tr')} MÜDÜRLÜĞÜNE`
+          : 'İLGİLİ OKULA';
+        ws['A2'] = { t: 's', v: targetLabel, s: metaBold };
+      }
+
+      ws['A3'] = { t: 's', v: 'İLÇESİ :', s: metaBold };
+      ws['C3'] = { t: 's', v: (settings.district || '').toLocaleUpperCase('tr'), s: metaBold };
+
+      const rightLabelCol = colLet(Math.max(5, totalColIdx - 5));
+      const rightValCol = colLet(Math.max(7, totalColIdx - 2));
+      ws[`${rightLabelCol}2`] = { t: 's', v: 'İLGİLİ AY :', s: metaBold };
+      ws[`${rightValCol}2`] = { t: 's', v: mName, s: metaBold };
+      ws[`${rightLabelCol}3`] = { t: 's', v: 'BÜTÇE YILI :', s: metaBold };
+      ws[`${rightValCol}3`] = { t: 'n', v: currentYear, s: metaBold };
+
+      // Satır 4 & 5 Başlıklar
+      ws['A4'] = { t: 's', v: 'Sıra No', s: headerStyle };
+      ws['A5'] = { t: 's', v: '', s: headerStyle };
+      ws['B4'] = { t: 's', v: 'ÖĞRETMENİN', s: headerStyle };
+      ws['C4'] = { t: 's', v: '', s: headerStyle };
+      ws['B5'] = { t: 's', v: 'ADI VE SOYADI', s: headerStyle };
+      ws['C5'] = { t: 's', v: 'OKULU / KURUMU', s: headerStyle };
+      ws[`${lastCol}4`] = { t: 's', v: 'TOPLAM SAAT SAYISI', s: headerStyle };
+      ws[`${lastCol}5`] = { t: 's', v: '', s: headerStyle };
+
+      ds.days.forEach((d, idx) => {
+        const cLet = colLet(3 + idx);
+        const hStyle = d.isWeekend ? wkndHeaderStyle : headerStyle;
+        ws[`${cLet}4`] = { t: 's', v: DAY_SHORT_NAMES[d.dayOfWeek], s: hStyle };
+        ws[`${cLet}5`] = { t: 'n', v: d.dayNumber, s: hStyle };
+      });
+
+      // Öğretmen Satırları (Satır 6+)
+      const firstDataRow = 6;
+      ds.rows.forEach((row, idx) => {
+        const r = firstDataRow + idx;
+        ws[`A${r}`] = { t: 'n', v: idx + 1, s: cellCenter };
+        ws[`B${r}`] = { t: 's', v: row.teacher.name, s: cellLeft };
+        ws[`C${r}`] = { t: 's', v: row.schoolDisplay, s: cellLeft };
+
+        ds.days.forEach((d, dIdx) => {
+          const cLet = colLet(3 + dIdx);
+          const h = row.dayHours[dIdx];
+          const st = d.isWeekend ? cellWkndCenter : cellCenter;
+          if (h > 0) {
+            ws[`${cLet}${r}`] = { t: 'n', v: h, s: st };
+          } else {
+            ws[`${cLet}${r}`] = { t: 's', v: '', s: st };
+          }
+        });
+
+        const endDayCol = colLet(3 + ds.days.length - 1);
+        ws[`${lastCol}${r}`] = {
+          t: 'n',
+          v: row.totalHours,
+          f: `SUM(D${r}:${endDayCol}${r})`,
+          s: cellTotal
+        };
+      });
+
+      const lastDataRow = firstDataRow + Math.max(ds.rows.length, 1) - 1;
+      const dailyRow = firstDataRow + ds.rows.length;
+      const grandRow = dailyRow + 1;
+      const certRow = grandRow + 1;
+      const sigTopRow = certRow + 2;
+      const sigNameRow = sigTopRow + 2;
+      const sigTitleRow = sigNameRow + 1;
+
+      // GÜNLÜK GÖREV SAYISI
+      merges.push({ s: { c: 1, r: dailyRow - 1 }, e: { c: 2, r: dailyRow - 1 } });
+      ws[`A${dailyRow}`] = { t: 's', v: '', s: headerStyle };
+      ws[`B${dailyRow}`] = { t: 's', v: 'GÜNLÜK GÖREV SAYISI :', s: headerStyle };
+      ws[`C${dailyRow}`] = { t: 's', v: '', s: headerStyle };
+      ds.days.forEach((d, dIdx) => {
+        const cLet = colLet(3 + dIdx);
+        ws[`${cLet}${dailyRow}`] = {
+          t: 'n',
+          v: ds.dailyCounts[dIdx],
+          f: ds.rows.length > 0 ? `COUNT(${cLet}${firstDataRow}:${cLet}${lastDataRow})` : undefined,
+          s: d.isWeekend ? wkndHeaderStyle : headerStyle
+        };
+      });
+      ws[`${lastCol}${dailyRow}`] = { t: 'n', v: ds.totalDutyCount, s: headerStyle };
+
+      // GENEL TOPLAM
+      merges.push({ s: { c: 0, r: grandRow - 1 }, e: { c: totalColIdx - 1, r: grandRow - 1 } });
+      ws[`A${grandRow}`] = { t: 's', v: 'GENEL TOPLAM :', s: wkndHeaderStyle };
+      ws[`${lastCol}${grandRow}`] = {
+        t: 'n',
+        v: ds.grandTotalHours,
+        f: ds.rows.length > 0 ? `SUM(${lastCol}${firstDataRow}:${lastCol}${lastDataRow})` : undefined,
+        s: wkndHeaderStyle
+      };
+
+      // Resmi 39. Madde Alt Yazı
+      merges.push({ s: { c: 0, r: certRow - 1 }, e: { c: totalColIdx, r: certRow - 1 } });
+      ws[`A${certRow}`] = {
+        t: 's',
+        v: `Yukarıda belirtilen görevlilerce MEB Bağlı Resmi Okullarda Yatılılık, Bursluluk, Sosyal Yardımlar ve Okul Pansiyonları Yönetmeliğinin 39. Madde gereğince belletici olarak görevlendirilen öğretmenler ${mName} ayında toplam ${ds.grandTotalHours} saat ek ders ücret karşılığı belleticilik görevi yapmışlardır.`,
+        s: { font: { name: 'Calibri', sz: 9.5, italic: false }, alignment: { horizontal: 'left', vertical: 'center', wrapText: true } }
+      };
+
+      // İmzalar
+      const sigCenter = { font: { name: 'Calibri', sz: 10, bold: true }, alignment: { horizontal: 'center', vertical: 'center' } };
+      const sigSub = { font: { name: 'Calibri', sz: 9.5, bold: false }, alignment: { horizontal: 'center', vertical: 'center' } };
+      const rightSigColIdx = Math.max(6, totalColIdx - 6);
+      merges.push({ s: { c: 1, r: sigTopRow - 1 }, e: { c: 4, r: sigTopRow - 1 } });
+      merges.push({ s: { c: 1, r: sigNameRow - 1 }, e: { c: 4, r: sigNameRow - 1 } });
+      merges.push({ s: { c: 1, r: sigTitleRow - 1 }, e: { c: 4, r: sigTitleRow - 1 } });
+      merges.push({ s: { c: rightSigColIdx, r: sigTopRow - 1 }, e: { c: totalColIdx, r: sigTopRow - 1 } });
+      merges.push({ s: { c: rightSigColIdx, r: sigNameRow - 1 }, e: { c: totalColIdx, r: sigNameRow - 1 } });
+      merges.push({ s: { c: rightSigColIdx, r: sigTitleRow - 1 }, e: { c: totalColIdx, r: sigTitleRow - 1 } });
+
+      const rSigLet = colLet(rightSigColIdx);
+      ws[`B${sigTopRow}`] = { t: 's', v: 'Düzenleyen', s: sigSub };
+      ws[`B${sigNameRow}`] = { t: 's', v: settings.vicePrincipal || '', s: sigCenter };
+      ws[`B${sigTitleRow}`] = { t: 's', v: settings.viceTitle || '', s: sigSub };
+
+      ws[`${rSigLet}${sigTopRow}`] = { t: 's', v: getTodayFormattedTR(), s: sigSub };
+      ws[`${rSigLet}${sigNameRow}`] = { t: 's', v: settings.principal || '', s: sigCenter };
+      ws[`${rSigLet}${sigTitleRow}`] = { t: 's', v: settings.principalTitle || '', s: sigSub };
+
+      const colsSpec = [{ wch: 6 }, { wch: 24 }, { wch: 28 }];
+      ds.days.forEach(() => colsSpec.push({ wch: 4.2 }));
+      colsSpec.push({ wch: 11 });
+      ws['!cols'] = colsSpec;
+      ws['!merges'] = merges;
+      ws['!ref'] = `A1:${lastCol}${sigTitleRow}`;
+
+      const sheetTitle = isOwn ? 'Puantaj' : 'Puantaj Diğer Okullar';
+      XLSX.utils.book_append_sheet(wb, ws, sheetTitle);
+      const fileName = isOwn
+        ? `${currentYear}_${mName}_PUANTAJ_KENDI_OKULU.xlsx`
+        : `${currentYear}_${mName}_DIS_OKUL_PUANTAJ.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    } catch (err) {
+      console.error('Puantaj Excel hatası:', err);
+      alert('Puantaj Excel dosyası oluşturulurken bir hata oluştu: ' + err.message);
+    }
+  }
+
+  function setupPuantajHandlers() {
+    const handleHoursInput = (inputEl, key) => {
+      if (!inputEl) return;
+      inputEl.addEventListener('change', () => {
+        if (!ensureNotExpiredOrAlert()) {
+          syncPuantajHoursInputs();
+          return;
+        }
+        const val = Math.max(1, Math.min(24, parseInt(inputEl.value, 10) || (key === 'nobetHours' ? 8 : 4)));
+        settings[key] = val;
+        applySettingsToUI();
+        renderPuantajTables();
+        saveToLocalStorage();
+      });
+    };
+
+    handleHoursInput(puantajOwnNobetHoursEl, 'nobetHours');
+    handleHoursInput(puantajOwnEtutHoursEl, 'etutHours');
+    handleHoursInput(puantajOtherNobetHoursEl, 'nobetHours');
+    handleHoursInput(puantajOtherEtutHoursEl, 'etutHours');
+
+    if (chkPuantajOwnOnlyActive) chkPuantajOwnOnlyActive.addEventListener('change', () => renderSinglePuantaj('own'));
+    if (chkPuantajOtherOnlyActive) chkPuantajOtherOnlyActive.addEventListener('change', () => renderSinglePuantaj('other'));
+    if (selectPuantajOtherSchool) selectPuantajOtherSchool.addEventListener('change', () => renderSinglePuantaj('other'));
+
+    if (btnPuantajOwnPdf) btnPuantajOwnPdf.addEventListener('click', () => exportPuantajPdf('own'));
+    if (btnPuantajOwnExcel) btnPuantajOwnExcel.addEventListener('click', () => exportPuantajExcel('own'));
+    if (btnPuantajOwnPrint) btnPuantajOwnPrint.addEventListener('click', () => printPuantaj('own'));
+
+    if (btnPuantajOtherPdf) btnPuantajOtherPdf.addEventListener('click', () => exportPuantajPdf('other'));
+    if (btnPuantajOtherExcel) btnPuantajOtherExcel.addEventListener('click', () => exportPuantajExcel('other'));
+    if (btnPuantajOtherPrint) btnPuantajOtherPrint.addEventListener('click', () => printPuantaj('other'));
   }
 
   function switchTab(targetId) {
@@ -2627,7 +3439,9 @@
     }
     navTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === targetId));
     tabPanes.forEach(p => p.classList.toggle('active', p.id === targetId));
-    if (targetId === 'tab-users') {
+    if (targetId === 'tab-puantaj-own' || targetId === 'tab-puantaj-other') {
+      renderPuantajTables();
+    } else if (targetId === 'tab-users') {
       renderUsersManagementTab();
       if (window.authManager && window.authManager.isCloudMode()) {
         window.authManager.refreshUsersAsync().then(() => renderUsersManagementTab());
@@ -2905,7 +3719,11 @@
       btn.classList.toggle('btn-no-right', isExpired || !schedStatus.allowed);
     });
 
-    const exportButtons = [btnExportPdf, btnExportExcel, btnPrint];
+    const exportButtons = [
+      btnExportPdf, btnExportExcel, btnPrint,
+      btnPuantajOwnPdf, btnPuantajOwnExcel, btnPuantajOwnPrint,
+      btnPuantajOtherPdf, btnPuantajOtherExcel, btnPuantajOtherPrint
+    ];
     exportButtons.forEach(btn => {
       if (!btn) return;
       btn.classList.toggle('btn-no-right', isExpired || !exportStatus.allowed);
